@@ -67,6 +67,31 @@ class DATABASE_CONFIG {
 }
 ```
 
+## Testing
+
+### Running tests
+
+```bash
+./vendor/bin/phpunit
+```
+
+### Testing LDAP datasource
+
+LDAP tests require a running LDAP server. You can start one using Docker Compose:
+
+```bash
+docker compose up -d
+```
+
+This will start:
+- OpenLDAP server on port 389
+- phpLDAPadmin on http://localhost:8080
+
+You can access phpLDAPadmin to inspect the LDAP directory:
+- URL: http://localhost:8080
+- Login DN: `cn=admin,dc=cakephp,dc=org`
+- Password: `password`
+
 ## Contributing to datasources
 
 If you have a datasource, or an idea for a datasource that could benefit the CakePHP community, please fork the project on github. Once you have forked the project you can commit your datasource class (and any test cases). Once you have pushed your changes back to github you can send a pull request, and your changes will be reviewed and merged in or feedback will be given.
