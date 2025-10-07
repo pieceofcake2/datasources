@@ -65,7 +65,9 @@ class LdapSourceTest extends CakeTestCase
             $ldap->fullDebug = false;
         }
 
-        CakeLog::disable('stderr');
+        if (CakeLog::stream('stderr')) {
+            CakeLog::disable('stderr');
+        }
     }
 
     public function tearDown(): void
@@ -73,7 +75,10 @@ class LdapSourceTest extends CakeTestCase
         parent::tearDown();
 
         ConnectionManager::drop('test_ldap');
-        CakeLog::enable('stderr');
+
+        if (CakeLog::stream('stderr')) {
+            CakeLog::enable('stderr');
+        }
     }
 
     public function loadLdapFixtures($config): void
