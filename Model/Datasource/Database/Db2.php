@@ -157,8 +157,8 @@ class DboDb2 extends DboSource
      */
     public function disconnect()
     {
-        @db2_free_result($this->results);
-        $this->connected = !@db2_close($this->connection);
+        @db2_free_result($this->results); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+        $this->connected = !@db2_close($this->connection); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
 
         return !$this->connected;
     }
@@ -542,9 +542,8 @@ class DboDb2 extends DboSource
             return $col;
         }
         $col = str_replace(')', '', $real);
-        $limit = null;
         if (strpos($col, '(') !== false) {
-            [$col, $limit] = explode('(', $col);
+            [$col, ] = explode('(', $col);
         }
 
         if (in_array($col, ['date', 'time', 'datetime', 'timestamp'])) {
@@ -613,19 +612,17 @@ class DboDb2 extends DboSource
      *
      * 2. Gets the actual values.
      *
-     * @return unknown
+     * @return array|false
      */
     public function fetchResult()
     {
         if ($row = db2_fetch_array($this->results)) {
             $resultRow = [];
-            $i = 0;
 
             foreach ($row as $index => $field) {
                 $table = $this->map[$index][0];
                 $column = strtolower($this->map[$index][1]);
                 $resultRow[$table][$column] = $row[$index];
-                $i++;
             }
 
             return $resultRow;

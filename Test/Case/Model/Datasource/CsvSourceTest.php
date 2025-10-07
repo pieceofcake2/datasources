@@ -237,13 +237,13 @@ class CsvSourceTest extends CakeTestCase
         $expected = [
             [
                 'BlogTest' => [
-                    'key'   => '1st',
+                    'key' => '1st',
                     'title' => '1st Blog',
                 ],
             ],
             [
                 'BlogTest' => [
-                    'key'   => 'myblog',
+                    'key' => 'myblog',
                     'title' => 'Hello World!',
                 ],
             ],
@@ -273,7 +273,7 @@ class CsvSourceTest extends CakeTestCase
         $expected = [
             [
                 'BlogTest' => [
-                    'key'   => 'myblog',
+                    'key' => 'myblog',
                     'title' => 'Hello World!',
                 ],
             ],
@@ -296,7 +296,7 @@ class CsvSourceTest extends CakeTestCase
     {
         // Add new db config
         ConnectionManager::create('test_csv', $this->config);
-        $model = ClassRegistry::init('BlogTest');
+        ClassRegistry::init('BlogTest');
         $this->Csv->close();
         $this->assertFalse($this->Csv->connected);
         $this->assertEmpty($this->Csv->handle);

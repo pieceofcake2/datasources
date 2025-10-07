@@ -7,9 +7,9 @@ class AllDatasourcesTest extends CakeTestCase
     /**
      * Suite define the tests for this suite
      *
-     * @return void
+     * @return CakeTestSuite
      */
-    public static function suite()
+    public static function suite(): CakeTestSuite
     {
         $suite = new CakeTestSuite('All Datasources test');
 

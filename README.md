@@ -30,9 +30,6 @@ This plugin contains various datasources contributed by the core CakePHP team an
 * Database/Db2
 * Database/Firebird
 * Database/Odbc
-* Database/Sqlite3
-* Database/Sqlsrv
-* Database/Sybase
 
 ### Using the datasources plugin
 

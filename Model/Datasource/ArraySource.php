@@ -154,7 +154,7 @@ class ArraySource extends DataSource
             $limit = $queryData['page'] * $queryData['limit'];
         }
 
-        foreach ($model->records as $pos => $record) {
+        foreach ($model->records as $record) {
             // Tests whether the record will be chosen
             if (!empty($queryData['conditions'])) {
                 $queryData['conditions'] = (array)$queryData['conditions'];
@@ -185,7 +185,6 @@ class ArraySource extends DataSource
                 $order = $order[0];
             }
 
-            $count = count($data);
             $args = [];
             foreach ($order as $field => $dir) {
                 if (is_numeric($field)) {

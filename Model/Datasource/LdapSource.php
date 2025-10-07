@@ -263,6 +263,7 @@ class LdapSource extends DataSource
         //So little known fact, if your php-ldap lib is built against openldap like pretty much every linux
         //distro out their like redhat, suse etc. The connect doesn't acutally happen when you call ldap_connect
         //it happens when you call ldap_bind.  So if you are using failover then you have to test here also.
+        // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
         $bindResult = @ldap_bind($this->database, $bindDN, $bindPasswd); // @codingStandardsIgnoreLine
         if (!$bindResult) {
             if (ldap_errno($this->database) == 49) {
@@ -544,7 +545,7 @@ class LdapSource extends DataSource
      * The "U" in CRUD
      *
      * @param Model $model The model being updated.
-     * @param array $fields  Array of fields to be updated
+     * @param array $fields Array of fields to be updated
      * @param int $values Array of values to be update $fields to.
      * @param mixed $conditions *unused*
      * @return bool Success
@@ -781,7 +782,7 @@ class LdapSource extends DataSource
             if (!empty($fetch) && is_array($fetch)) {
                 if ($recursive > 0) {
                     foreach ($linkModel->_associations as $type1) {
-                        foreach ($linkModel->{$type1 } as $assoc1 => $assocData1) {
+                        foreach ($linkModel->{$type1} as $assoc1 => $assocData1) {
                             $deepModel = $linkModel->{$assocData1['className']};
                             if ($deepModel->alias !== $model->name) {
                                 $tmpStack = $stack;
@@ -936,7 +937,7 @@ class LdapSource extends DataSource
                                     if ($strings[$i] !== '$') {
                                         array_push($entry['sup_classes'], preg_replace("/'/", '', $strings[$i]));
                                     }
-                                } while (! preg_match('/\)+\)?/', $strings[$i + 1]));
+                                } while (!preg_match('/\)+\)?/', $strings[$i + 1]));
                             }
                             break;
                         case 'ABSTRACT':
@@ -1067,8 +1068,8 @@ class LdapSource extends DataSource
      * Log given LDAP query.
      *
      * @param string $query LDAP statement
-     * @todo Add hook to log errors instead of returning false
      * @return void
+     * @todo Add hook to log errors instead of returning false
      */
     public function logQuery($query)
     {
@@ -1323,7 +1324,8 @@ class LdapSource extends DataSource
                             $queryData['fields'] = [];
                         }
                         // Use error control operator to suppress output of sizelimit exceeded message when sizelimit is used.
-                        $res = @ldap_search($this->database, $queryData['targetDn'], $queryData['conditions'], $queryData['fields'], 0, $queryData['limit']);  // @codingStandardsIgnoreLine
+                        // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+                        $res = @ldap_search($this->database, $queryData['targetDn'], $queryData['conditions'], $queryData['fields'], 0, $queryData['limit']);
                     }
 
                     if (!$res) {

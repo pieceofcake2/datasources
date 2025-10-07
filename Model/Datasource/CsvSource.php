@@ -219,7 +219,7 @@ class CsvSource extends DataSource
         if ($this->connected) {
             if (!empty($this->handle)) {
                 foreach ($this->handle as $h) {
-                    @fclose($h);
+                    @fclose($h); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
                 }
                 $this->handle = false;
             }
@@ -370,7 +370,7 @@ class CsvSource extends DataSource
                 $cond = $value;
                 $result = false;
                 foreach ($cond as $name => $value) {
-                    [$condAlias, $name] = pluginSplit($name);
+                    [, $name] = pluginSplit($name);
                     if (is_array($value)) {
                         foreach ($value as $val) {
                             if (Set::matches($this->_createRule($name, $val), $record[$alias])) {

@@ -153,7 +153,7 @@ class DboFirebird extends DboSource
     {
         $this->connected = false;
 
-        return @ibase_close($this->connection);
+        return @ibase_close($this->connection); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
     }
 
     /**
@@ -164,7 +164,7 @@ class DboFirebird extends DboSource
      */
     protected function _execute($sql)
     {
-        return @ibase_query($this->connection, $sql);
+        return @ibase_query($this->connection, $sql); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
     }
 
     /**
@@ -200,7 +200,7 @@ class DboFirebird extends DboSource
 				FROM RDB" . '$' . "RELATIONS
 				Where RDB" . '$' . 'SYSTEM_FLAG =0';
 
-        $result = @ibase_query($this->connection, $sql);
+        $result = @ibase_query($this->connection, $sql); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
         $tables = [];
         while ($row = ibase_fetch_row($result)) {
             $tables[] = strtolower(trim($row[0]));
@@ -381,7 +381,7 @@ class DboFirebird extends DboSource
 		FROM RDB\$TRIGGERS WHERE RDB\$RELATION_NAME = '" . strtoupper($source) . "' AND
 		RDB\$SYSTEM_FLAG IS NULL AND  RDB\$TRIGGER_TYPE = 1 ";
 
-        $result = @ibase_query($this->connection, $query);
+        $result = @ibase_query($this->connection, $query); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
         $generator = '';
 
         while ($row = ibase_fetch_row($result, IBASE_TEXT)) {
@@ -456,9 +456,8 @@ class DboFirebird extends DboSource
         }
 
         $col = str_replace(')', '', $real);
-        $limit = null;
         if (strpos($col, '(') !== false) {
-            [$col, $limit] = explode('(', $col);
+            [$col, ] = explode('(', $col);
         }
 
         if (in_array($col, ['DATE', 'TIME'])) {
@@ -547,14 +546,12 @@ class DboFirebird extends DboSource
     /**
      * Fetches the next row from the current result set
      *
-     * @return unknown
+     * @return array|false
      */
     public function fetchResult()
     {
         if ($row = ibase_fetch_row($this->results, IBASE_TEXT)) {
             $resultRow = [];
-            $i = 0;
-
             foreach ($row as $index => $field) {
                 [$table, $column] = $this->map[$index];
 
@@ -562,7 +559,6 @@ class DboFirebird extends DboSource
                     $resultRow[0][$column] = $row[$index];
                 } else {
                     $resultRow[$table][$column] = $row[$index];
-                    $i++;
                 }
             }
 

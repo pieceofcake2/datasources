@@ -91,7 +91,7 @@ class AdodbTestModel extends CakeTestModel
      * @param mixed $recursive
      * @return mixed
      */
-    public function find($conditions = null, $fields = null, $order = null, $recursive = null)
+    public function find($conditions = null, $fields = null, $order = null, $recursive = null): mixed
     {
         return $conditions;
     }
@@ -105,7 +105,7 @@ class AdodbTestModel extends CakeTestModel
      * @param mixed $recursive
      * @return mixed
      */
-    public function findAll($conditions = null, $fields = null, $order = null, $recursive = null)
+    public function findAll($conditions = null, $fields = null, $order = null, $recursive = null): mixed
     {
         return $conditions;
     }
@@ -119,24 +119,24 @@ class AdodbTestModel extends CakeTestModel
     public function schema($field = false): array
     {
         return [
-            'id'        => ['type' => 'integer', 'null' => '', 'default' => '', 'length' => '8'],
+            'id' => ['type' => 'integer', 'null' => '', 'default' => '', 'length' => '8'],
             'client_id' => ['type' => 'integer', 'null' => '', 'default' => '0', 'length' => '11'],
-            'name'      => ['type' => 'string', 'null' => '', 'default' => '', 'length' => '255'],
-            'login'     => ['type' => 'string', 'null' => '', 'default' => '', 'length' => '255'],
-            'passwd'    => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '255'],
-            'addr_1'    => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '255'],
-            'addr_2'    => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '25'],
-            'zip_code'  => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '155'],
-            'city'      => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '155'],
-            'country'   => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '155'],
-            'phone'     => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '155'],
-            'fax'       => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '155'],
-            'url'       => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '255'],
-            'email'     => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '155'],
-            'comments'  => ['type' => 'text', 'null' => '1', 'default' => '', 'length' => ''],
+            'name' => ['type' => 'string', 'null' => '', 'default' => '', 'length' => '255'],
+            'login' => ['type' => 'string', 'null' => '', 'default' => '', 'length' => '255'],
+            'passwd' => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '255'],
+            'addr_1' => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '255'],
+            'addr_2' => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '25'],
+            'zip_code' => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '155'],
+            'city' => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '155'],
+            'country' => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '155'],
+            'phone' => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '155'],
+            'fax' => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '155'],
+            'url' => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '255'],
+            'email' => ['type' => 'string', 'null' => '1', 'default' => '', 'length' => '155'],
+            'comments' => ['type' => 'text', 'null' => '1', 'default' => '', 'length' => ''],
             'last_login' => ['type' => 'datetime', 'null' => '1', 'default' => '', 'length' => ''],
-            'created'   => ['type' => 'date', 'null' => '1', 'default' => '', 'length' => ''],
-            'updated'   => ['type' => 'datetime', 'null' => '1', 'default' => '', 'length' => null],
+            'created' => ['type' => 'date', 'null' => '1', 'default' => '', 'length' => ''],
+            'updated' => ['type' => 'datetime', 'null' => '1', 'default' => '', 'length' => null],
         ];
     }
 }

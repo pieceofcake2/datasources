@@ -119,7 +119,7 @@ class DboOdbc extends DboSource
      */
     public function disconnect()
     {
-        return @odbc_close($this->connection);
+        return @odbc_close($this->connection); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
     }
 
     /**
@@ -285,9 +285,10 @@ class DboOdbc extends DboSource
     /**
      * Enter description here...
      *
-     * @param string $real Real database-layer column type (i.e. "varchar(255)")
+     * @param array|string $real Real database-layer column type (i.e. "varchar(255)")
+     * @return string
      */
-    public function column($real)
+    public function column($real): string
     {
         if (is_array($real)) {
             $col = $real['name'];
@@ -304,7 +305,7 @@ class DboOdbc extends DboSource
     /**
      * Enter description here...
      *
-     * @param unknown_type $results
+     * @param resource $results
      */
     public function resultSet(&$results)
     {
@@ -378,11 +379,11 @@ class DboOdbc extends DboSource
     /**
      * Fetches the next row from the current result set
      *
-     * @return unknown
+     * @return array|false
      */
     public function fetchResult()
     {
-        if ($row = odbc_fetch_row($this->results)) {
+        if (odbc_fetch_row($this->results)) {
             $resultRow = [];
             $numFields = odbc_num_fields($this->results);
             $i = 0;
