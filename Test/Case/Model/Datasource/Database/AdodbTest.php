@@ -153,7 +153,7 @@ if (!class_exists('Article')) {
 /**
  * DboAdodbTest class
  */
-class DboAdodbTest extends CakeTestCase
+class AdodbTest extends CakeTestCase
 {
     /**
      * The Dbo instance to be tested
@@ -184,9 +184,10 @@ class DboAdodbTest extends CakeTestCase
      */
     public function startTest($method): void
     {
-        $this->markTestSkipped('Test not compatible with cake 2.0');
         $db = ConnectionManager::getDataSource('test');
         $this->db = new DboAdoTestDb($db->config);
+        $this->db->startQuote = '`';
+        $this->db->endQuote = '`';
         $this->model = new AdodbTestModel();
     }
 

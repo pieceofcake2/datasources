@@ -1,4 +1,8 @@
 <?php
+
+use LDAP\Connection;
+use LDAP\Result;
+
 /**
  * LDAP Datasource
  *
@@ -328,7 +332,7 @@ class LdapSource extends DataSource
             ldap_free_result($this->_result);
             $this->_result = false;
         }
-        if (is_resource($this->database) || $this->database instanceof \LDAP\Connection) {
+        if (is_resource($this->database) || $this->database instanceof Connection) {
             // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
             @ldap_unbind($this->database);
             $this->database = false;
@@ -831,7 +835,7 @@ class LdapSource extends DataSource
      */
     public function lastNumRows($source = null)
     {
-        if ($this->_result && (is_resource($this->_result) || $this->_result instanceof \LDAP\Result)) {
+        if ($this->_result && (is_resource($this->_result) || $this->_result instanceof Result)) {
             return ldap_count_entries($this->database, $this->_result);
         }
 

@@ -435,20 +435,32 @@ class Adodb extends DataSource
      */
     public function value($data, $column = null, $null = false)
     {
-        $parent = parent::value($data, $column, $null);
-        if ($parent != null) {
-            return $parent;
+        // Handle arrays
+        if (is_array($data) && !empty($data)) {
+            return array_map(
+                [&$this, 'value'],
+                $data,
+                array_fill(0, count($data), $column),
+            );
         }
 
+        // Handle NULL
         if ($data === null || (is_array($data) && empty($data))) {
             return 'NULL';
         }
 
+        // Handle empty strings
         if ($data === '') {
-            return "''";
+            return $null ? 'NULL' : "''";
         }
 
-        return $this->_adodb->qstr($data);
+        // Use ADOdb's qstr for quoting
+        if ($this->_adodb && method_exists($this->_adodb, 'qstr')) {
+            return $this->_adodb->qstr($data);
+        }
+
+        // Fallback for testing without ADOdb connection
+        return "'" . str_replace("'", "''", $data) . "'";
     }
 
     /**
@@ -465,7 +477,16 @@ class Adodb extends DataSource
         if (empty($alias)) {
             $alias = $model->alias;
         }
-        $fields = parent::fields($model, $alias, $fields, false);
+
+        // Get fields from schema if empty
+        $allFields = empty($fields);
+        if ($allFields) {
+            $fields = array_keys($model->schema());
+        } elseif (!is_array($fields)) {
+            $fields = [$fields];
+        }
+
+        $fields = array_values(array_filter($fields));
 
         if (!$quote) {
             return $fields;
