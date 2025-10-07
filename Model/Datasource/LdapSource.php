@@ -326,9 +326,12 @@ class LdapSource extends DataSource
     {
         if ($this->_result) {
             ldap_free_result($this->_result);
+            $this->_result = false;
         }
-        if (is_resource($this->database)) {
-            ldap_unbind($this->database);
+        if (is_resource($this->database) || $this->database instanceof \LDAP\Connection) {
+            // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+            @ldap_unbind($this->database);
+            $this->database = false;
         }
         $this->connected = false;
 
@@ -504,7 +507,6 @@ class LdapSource extends DataSource
             return false;
         }
         // Format results  -----------------------------
-        ldap_sort($this->database, $res, $queryData['order'][0]);
         $resultSet = ldap_get_entries($this->database, $res);
         $resultSet = $this->_ldapFormat($model, $resultSet);
 
@@ -829,7 +831,7 @@ class LdapSource extends DataSource
      */
     public function lastNumRows($source = null)
     {
-        if ($this->_result && is_resource($this->_result)) {
+        if ($this->_result && (is_resource($this->_result) || $this->_result instanceof \LDAP\Result)) {
             return ldap_count_entries($this->database, $this->_result);
         }
 
@@ -1353,7 +1355,7 @@ class LdapSource extends DataSource
         }
 
         $this->_result = $res;
-        $this->took = round((microtime(true) - $t) * 1000, 0);
+        $this->took = round((microtime(true) - $t) * 1000, 0, PHP_ROUND_HALF_UP);
         $this->error = $this->lastError();
         $this->numRows = $this->lastNumRows();
 

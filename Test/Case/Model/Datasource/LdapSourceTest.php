@@ -124,12 +124,12 @@ class LdapSourceTest extends CakeTestCase
             }
 
             // CREATE TABLE
-            ldap_add($ldap, $table, ['objectclass' => 'organizationalUnit', 'ou' => $fixture->table]);
+            @ldap_add($ldap, $table, ['objectclass' => 'organizationalUnit', 'ou' => $fixture->table]);
 
             // INSERT
             foreach ($fixture->records as $record) {
                 $dn = $fixture->primaryKey . '=' . $record[$fixture->primaryKey] . ',' . $table;
-                ldap_add($ldap, $dn, $record);
+                @ldap_add($ldap, $dn, $record);
             }
         }
 
@@ -154,7 +154,7 @@ class LdapSourceTest extends CakeTestCase
         $model = new LdapPerson();
 
         $people = $model->find('all', [
-            'conditions' => ['sn' => 'Doe'],
+            'conditions' => ['sn' => 'doe'],  // lowercase to match fixture
         ]);
 
         $expected = [
