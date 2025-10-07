@@ -18,20 +18,19 @@
 
 /**
  * LdapPerson Fixture
- *
  */
-class LdapPersonFixture extends CakeTestFixture {
+class LdapPersonFixture extends CakeTestFixture
+{
+    public $primaryKey = 'cn';
 
-	public $primaryKey = 'cn';
-
-/**
- * records property
- *
- * @var array
- */
-	public $records = array(
-		array('objectclass' => 'person', 'cn' => 'jane', 'sn' => 'doe'),
-		array('objectclass' => 'person', 'cn' => 'john', 'sn' => 'doe'),
-		array('objectclass' => 'person', 'cn' => 'nanashi ', 'sn' => 'nanashi'),
-	);
+    /**
+     * records property
+     *
+     * @var array
+     */
+    public $records = [
+        ['objectclass' => 'person', 'cn' => 'jane', 'sn' => 'doe'],
+        ['objectclass' => 'person', 'cn' => 'john', 'sn' => 'doe'],
+        ['objectclass' => 'person', 'cn' => 'nanashi ', 'sn' => 'nanashi'],
+    ];
 }

@@ -18,30 +18,29 @@
 
 /**
  * User Fixture
- *
  */
-class UserFixture extends CakeTestFixture {
+class UserFixture extends CakeTestFixture
+{
+    /**
+     * Fields
+     *
+     * @var array
+     */
+    public $fields = [
+        'id' => ['type' => 'integer', 'key' => 'primary'],
+        'born_id' => ['type' => 'integer', 'null' => false],
+        'name' => ['type' => 'string', 'null' => false],
+    ];
 
-/**
- * Fields
- *
- * @var array
- */
-	public $fields = array(
-		'id' => array('type' => 'integer', 'key' => 'primary'),
-		'born_id' => array('type' => 'integer', 'null' => false),
-		'name' => array('type' => 'string', 'null' => false)
-	);
-
-/**
- * records property
- *
- * @var array
- */
-	public $records = array(
-		array('born_id' => 1, 'name' => 'User 1'),
-		array('born_id' => 2, 'name' => 'User 2'),
-		array('born_id' => 1, 'name' => 'User 3'),
-		array('born_id' => 3, 'name' => 'User 4')
-	);
+    /**
+     * records property
+     *
+     * @var array
+     */
+    public $records = [
+        ['born_id' => 1, 'name' => 'User 1'],
+        ['born_id' => 2, 'name' => 'User 2'],
+        ['born_id' => 1, 'name' => 'User 3'],
+        ['born_id' => 3, 'name' => 'User 4'],
+    ];
 }

@@ -1,30 +1,36 @@
 {
-    "name": "cakephp/datasources",
-    "description": "CakePHP Datasources Plugin",
+    "name": "pieceofcake2/datasources",
+    "description": "CakePHP 2 Datasources Plugin",
     "type": "cakephp-plugin",
-    "keywords": ["cakephp", "datasources", "adodb", "couchdb", "db2", "firebird", "ldap", "odbc", "sqlserver", "sqlite", "sybase"],
-    "homepage": "https://github.com/cakephp/datasources",
+    "keywords": ["cakephp", "cakephp2", "datasources", "adodb", "couchdb", "db2", "firebird", "ldap", "odbc", "sqlserver", "sqlite", "sybase"],
     "license": "MIT",
-    "authors": [
-        {
-            "name": "CakePHP Community",
-            "homepage": "https://github.com/cakephp/datasources/graphs/contributors"
-        }
-    ],
-    "support": {
-        "issues": "https://github.com/cakephp/datasources/issues",
-        "forum": "http://stackoverflow.com/tags/cakephp",
-        "irc": "irc://irc.freenode.org/cakephp",
-        "source": "https://github.com/cakephp/datasources"
-    },
     "require": {
-        "php": ">=5.2.8",
-        "composer/installers": "*"
+        "php": "^8.0",
+        "composer/installers": "*",
+        "pieceofcake2/cakephp": "^2.10"
+    },
+    "require-dev": {
+        "adodb/adodb-php": "^5.22",
+        "cakephp/cakephp-codesniffer": "^5.0",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^9.6",
+        "pieceofcake2/app": "^2.1",
+        "pieceofcake2/phpstan-cakephp2": "^0.2.1"
+    },
+    "suggest": {
+        "ext-ldap": "Required for using LdapSource"
+    },
+    "replace": {
+        "cakephp/datasources": "2.*"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "composer/installers": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     },
     "extra": {
-        "branch-alias": {
-            "dev-master": "2.3.x-dev"
-        },
         "installer-name": "Datasources"
     }
 }
