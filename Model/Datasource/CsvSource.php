@@ -1,7 +1,5 @@
 <?php
 /**
- * PHP 5
- *
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright 2005-2009, Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
@@ -12,80 +10,53 @@
  * @link          http://cakephp.org CakePHP(tm) Project
  * @since         CakePHP Datasources v 0.3
  * @license       MIT License (http://www.opensource.org/licenses/mit-license.php)
- *
- * A CakePHP datasource for interacting with files using comma separated value storage.
- *
- * Create a datasource in your config/database.php
- *   public $csvfile = array(
- *     'datasource' => 'Datasources.CsvSource',
- *     'path' => '/path/to/file', // Path
- *     'extension' => 'csv', // File extension
- *     'delimiter' => null, // Column delimiter (e.g. "\t" for TSV). null detects ',' or ';' from the first line
- *     'readonly' => true, // Mark for read only access
- *     'recursive' => false // Only false is supported at the moment
- *   );
  */
-App::uses('DataSource', 'Model/Datasource');
-App::uses('Folder', 'Utility');
 
 /**
- * Comma Separated Values Datasource
+ * Read-only datasource for files with delimiter separated values (CSV, TSV).
+ *
+ * Each model reads the file named after its `$useTable` in the configured path.
+ * The first line of the file is the header (column names).
+ *
+ * ```
+ * // config/database.php
+ * public $csv = [
+ *     'datasource' => 'Datasources.CsvSource',
+ *     'path' => '/path/to/files',
+ *     'extension' => 'csv', // File extension
+ *     'delimiter' => null, // Column delimiter. null detects ',', ';' or "\t" from the header
+ *     'recursive' => false, // Whether listSources() looks into subdirectories
+ * ];
+ * ```
+ *
+ * Supported queries: conditions (equality, `IN` by an array value, `!=`, `<>`, `<`, `<=`, `>`, `>=`,
+ * nested `OR` / `AND` / `NOT`), fields, limit, offset and page.
  */
 class CsvSource extends DataSource
 {
     /**
-     * Description
+     * Delimiters detected from the header when the `delimiter` option is null.
      *
-     * @var string
+     * @var array<string>
      */
-    public $description = 'CSV Data Source';
+    protected const DETECTABLE_DELIMITERS = [',', ';', "\t"];
 
     /**
-     * Column delimiter
+     * Operators supported in condition keys (e.g. `'User.age >='`).
      *
-     * @var string
+     * @var array<string>
      */
-    public $delimiter = ';';
+    protected const OPERATORS = ['=', '!=', '<>', '<', '<=', '>', '>='];
 
     /**
-     * Maximum Columns
-     *
-     * @var int
+     * Description of the datasource.
      */
-    public $maxCol = 0;
-
-    /**
-     * Field Names
-     *
-     * @var mixed
-     */
-    public $fields = null;
-
-    /**
-     * File Handle
-     *
-     * @var mixed
-     */
-    public $handle = false;
-
-    /**
-     * Page to start on
-     *
-     * @var int
-     */
-    public $page = 1;
-
-    /**
-     * Limit of records
-     *
-     * @var int
-     */
-    public $limit = 99999;
+    public string $description = 'CSV Data Source';
 
     /**
      * Default configuration.
      *
-     * @var array
+     * @var array<string, mixed>
      */
     protected $_baseConfig = [
         'datasource' => 'csv',
@@ -97,15 +68,18 @@ class CsvSource extends DataSource
     ];
 
     /**
+     * Folder of the files.
+     */
+    protected ?Folder $folder = null;
+
+    /**
      * Constructor
      *
-     * @param string $config Configuration array
-     * @param bool $autoConnect Automatically connect to / open the file
+     * @param array<string, mixed> $config Configuration
+     * @param bool $autoConnect Whether to connect immediately
      */
-    public function __construct($config = null, $autoConnect = true)
+    public function __construct($config = [], $autoConnect = true)
     {
-        $this->debug = Configure::read('debug') > 0;
-        $this->fullDebug = Configure::read('debug') > 1;
         parent::__construct($config);
         if ($autoConnect) {
             $this->connect();
@@ -113,57 +87,58 @@ class CsvSource extends DataSource
     }
 
     /**
-     * Connects to the mailbox using options in the given configuration array.
+     * Opens the folder of the files.
      *
-     * @return bool True if the file could be opened.
+     * @return bool
      */
-    public function connect()
+    public function connect(): bool
     {
-        $this->connected = false;
-
-        if ($this->config['readonly']) {
-            $create = false;
-            $mode = 0;
-        } else {
-            $create = true;
-            $mode = 0777;
-        }
-
-        $this->connection = new Folder($this->config['path'], $create, $mode);
-        if ($this->connection) {
-            $this->handle = [];
-            $this->connected = true;
-        }
+        $create = !$this->config['readonly'];
+        $this->folder = new Folder($this->config['path'], $create, $create ? 0777 : false);
+        $this->connected = $this->folder->path !== null;
 
         return $this->connected;
     }
 
     /**
-     * List available sources
+     * Closes the folder.
      *
-     * @return array of available CSV files
+     * @return void
      */
-    public function listSources($data = null)
+    public function close(): void
+    {
+        $this->folder = null;
+        $this->connected = false;
+    }
+
+    /**
+     * Lists the available files (without the extension).
+     *
+     * @param mixed $data Unused
+     * @return array<string>|null
+     */
+    public function listSources($data = null): ?array
     {
         $this->config['database'] = 'csv';
         $cache = parent::listSources();
         if ($cache !== null) {
+            unset($this->config['database']);
+
             return $cache;
         }
 
-        $extPattern = '\.' . preg_quote($this->config['extension']);
+        $pattern = '.*\.' . preg_quote($this->config['extension'], '/');
         if ($this->config['recursive']) {
-            $list = $this->connection->findRecursive('.*' . $extPattern, true);
-            foreach ($list as &$item) {
-                $item = mb_substr($item, mb_strlen($this->config['path'] . DS));
-            }
+            $prefix = rtrim($this->folder->path, DS) . DS;
+            $list = array_map(
+                fn(string $file): string => substr($file, strlen($prefix)),
+                $this->folder->findRecursive($pattern, true),
+            );
         } else {
-            $list = $this->connection->find('.*' . $extPattern, true);
+            $list = $this->folder->find($pattern, true);
         }
-
-        foreach ($list as &$item) {
-            $item = preg_replace('/' . $extPattern . '$/i', '', $item);
-        }
+        $extension = '.' . $this->config['extension'];
+        $list = array_map(fn(string $file): string => substr($file, 0, -strlen($extension)), $list);
 
         parent::listSources($list);
         unset($this->config['database']);
@@ -172,273 +147,298 @@ class CsvSource extends DataSource
     }
 
     /**
-     * Returns a Model description (metadata) or null if none found.
+     * Returns the schema of the model's file. All columns are strings.
      *
-     * @return mixed
+     * @param Model|string $model Model or table name
+     * @return array<string, array<string, mixed>>
+     * @throws MissingTableException When the file does not exist
      */
-    public function describe($model)
+    public function describe($model): array
     {
-        $this->_getDescriptionFromFirstLine($model);
+        $table = $model instanceof Model ? $model->table : $model;
+        $schema = [];
+        foreach ($this->readHeader($table)['fields'] as $field) {
+            $schema[$field] = ['type' => 'string', 'null' => true, 'default' => null, 'length' => null];
+        }
 
-        return $this->fields;
+        return $schema;
     }
 
     /**
-     * Get Description from First Line, and store into class vars
+     * Reads records.
      *
-     * @param Model $model
-     * @return bool True, Success
+     * @param Model $model Model
+     * @param array<string, mixed> $queryData Query
+     * @param int|null $recursive Unused
+     * @return array
+     * @throws MissingTableException When the file does not exist
+     * @throws InvalidArgumentException When a condition is not supported
      */
-    protected function _getDescriptionFromFirstLine(Model $model)
+    public function read(Model $model, $queryData = [], $recursive = null): array
     {
-        $filename = $model->table . '.' . $this->config['extension'];
-        $handle = fopen($this->config['path'] . DS . $filename, 'r');
-        $line = rtrim(fgets($handle), "\r\n");
-
-        if ($this->config['delimiter'] !== null) {
-            $this->delimiter = $this->config['delimiter'];
-            $this->fields = explode($this->delimiter, $line);
-            $this->maxCol = count($this->fields);
-            fclose($handle);
-
-            return true;
+        $conditions = (array)($queryData['conditions'] ?? []);
+        $records = [];
+        foreach ($this->readRows($model->table) as $row) {
+            if ($this->matchesConditions($row, $conditions, $model->alias)) {
+                $records[] = $row;
+            }
         }
 
-        $line = rtrim($line);
-        $dataComma = explode(',', $line);
-        $dataSemicolon = explode(';', $line);
-
-        if (count($dataComma) > count($dataSemicolon)) {
-            $this->delimiter = ',';
-            $this->fields = $dataComma;
-            $this->maxCol = count($dataComma);
-        } else {
-            $this->delimiter = ';';
-            $this->fields = $dataSemicolon;
-            $this->maxCol = count($dataSemicolon);
+        if ($model->findQueryType === 'count') {
+            return [[['count' => count($records)]]];
         }
-        fclose($handle);
+
+        $limit = empty($queryData['limit']) ? null : (int)$queryData['limit'];
+        $offset = (int)($queryData['offset'] ?? 0);
+        if ($limit !== null && $offset === 0 && !empty($queryData['page'])) {
+            $offset = ((int)$queryData['page'] - 1) * $limit;
+        }
+        $records = array_slice($records, $offset, $limit);
+
+        $fields = array_flip($this->normalizeFields((array)($queryData['fields'] ?? []), $model->alias));
+
+        return array_map(
+            fn(array $row): array => [$model->alias => $fields ? array_intersect_key($row, $fields) : $row],
+            $records,
+        );
+    }
+
+    /**
+     * Calculation is done in read() (only COUNT is supported).
+     *
+     * @param Model $model Model
+     * @param string $func Function
+     * @param array $params Parameters
+     * @return array<string, bool>
+     */
+    public function calculate(Model $model, $func, $params = []): array
+    {
+        return ['count' => true];
+    }
+
+    /**
+     * Reads the header of a file.
+     *
+     * @param string $table Table (file name without the extension)
+     * @return array{delimiter: string, fields: array<string>}
+     * @throws MissingTableException When the file does not exist
+     */
+    protected function readHeader(string $table): array
+    {
+        $file = $this->openFile($table);
+        // Remove the UTF-8 BOM added by spreadsheet applications
+        $line = (string)preg_replace('/\A\xEF\xBB\xBF/', '', (string)$file->fgets());
+        $line = rtrim($line, "\r\n");
+
+        $delimiter = $this->config['delimiter'] ?? $this->detectDelimiter($line);
+        $fields = array_map('trim', str_getcsv($line, $delimiter, '"', '\\'));
+
+        return ['delimiter' => $delimiter, 'fields' => $fields];
+    }
+
+    /**
+     * Reads the rows of a file as arrays keyed by the column names.
+     *
+     * Rows with fewer columns than the header are skipped, and extra columns are ignored.
+     *
+     * @param string $table Table (file name without the extension)
+     * @return Generator<array<string, string>>
+     * @throws MissingTableException When the file does not exist
+     */
+    protected function readRows(string $table): Generator
+    {
+        ['delimiter' => $delimiter, 'fields' => $fields] = $this->readHeader($table);
+        $count = count($fields);
+
+        $file = $this->openFile($table);
+        $file->setFlags(SplFileObject::READ_CSV | SplFileObject::READ_AHEAD | SplFileObject::SKIP_EMPTY | SplFileObject::DROP_NEW_LINE);
+        $file->setCsvControl($delimiter, '"', '\\');
+        foreach ($file as $index => $values) {
+            if ($index === 0 || !is_array($values) || count($values) < $count) {
+                continue;
+            }
+
+            yield array_combine($fields, array_slice($values, 0, $count));
+        }
+    }
+
+    /**
+     * Opens a file.
+     *
+     * @param string $table Table (file name without the extension)
+     * @return SplFileObject
+     * @throws MissingTableException When the file does not exist
+     */
+    protected function openFile(string $table): SplFileObject
+    {
+        $path = rtrim($this->config['path'], DS) . DS . $table . '.' . $this->config['extension'];
+        if (!is_file($path)) {
+            throw new MissingTableException(['table' => $table, 'class' => static::class, 'ds' => $this->configKeyName ?? 'csv']);
+        }
+
+        return new SplFileObject($path, 'r');
+    }
+
+    /**
+     * Detects the delimiter used most in the header.
+     *
+     * @param string $header Header line
+     * @return string
+     */
+    protected function detectDelimiter(string $header): string
+    {
+        $counts = [];
+        foreach (self::DETECTABLE_DELIMITERS as $delimiter) {
+            $counts[$delimiter] = substr_count($header, $delimiter);
+        }
+        arsort($counts);
+
+        return (string)array_key_first($counts);
+    }
+
+    /**
+     * Removes the model alias from field names (find('list') passes 'Model.field').
+     *
+     * @param array $fields Fields
+     * @param string $alias Model alias
+     * @return array<string>
+     */
+    protected function normalizeFields(array $fields, string $alias): array
+    {
+        return array_values(array_map(
+            fn($field): string => $this->stripAlias((string)$field, $alias),
+            $fields,
+        ));
+    }
+
+    /**
+     * Whether a row matches the conditions (combined with AND).
+     *
+     * @param array<string, string> $row Row
+     * @param array $conditions Conditions
+     * @param string $alias Model alias
+     * @return bool
+     * @throws InvalidArgumentException When a condition is not supported
+     */
+    protected function matchesConditions(array $row, array $conditions, string $alias): bool
+    {
+        foreach ($conditions as $key => $value) {
+            if (is_int($key)) {
+                if (!is_array($value)) {
+                    throw new InvalidArgumentException('CsvSource does not support SQL conditions: ' . $value);
+                }
+                $matched = $this->matchesConditions($row, $value, $alias);
+            } else {
+                $matched = match (strtoupper($key)) {
+                    'OR' => $this->matchesAny($row, (array)$value, $alias),
+                    'AND' => $this->matchesConditions($row, (array)$value, $alias),
+                    'NOT' => !$this->matchesConditions($row, (array)$value, $alias),
+                    default => $this->matchesCondition($row, $key, $value, $alias),
+                };
+            }
+
+            if (!$matched) {
+                return false;
+            }
+        }
 
         return true;
     }
 
     /**
-     * Close file handle
+     * Whether a row matches any of the conditions.
      *
-     * @return null
-     */
-    public function close()
-    {
-        if ($this->connected) {
-            if (!empty($this->handle)) {
-                foreach ($this->handle as $h) {
-                    @fclose($h); // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
-                }
-                $this->handle = false;
-            }
-            $this->connected = false;
-        }
-    }
-
-    /**
-     * Read Data
-     *
-     * @param Model $model
-     * @param array $queryData
-     * @param int $recursive Number of levels of association
-     * @return mixed
-     */
-    public function read(Model $model, $queryData = [], $recursive = null)
-    {
-        $this->describe($model);
-        $config = $this->config;
-        $filename = $config['path'] . DS . $model->table . '.' . $config['extension'];
-        if (!Set::extract($this->handle, $model->table)) {
-            $this->handle[$model->table] = fopen($filename, 'r');
-        } else {
-            fseek($this->handle[$model->table], 0, SEEK_SET);
-        }
-
-        $queryData = $this->_scrubQueryData($queryData);
-
-        if (isset($queryData['limit']) && !empty($queryData['limit'])) {
-            $this->limit = $queryData['limit'];
-        }
-
-        if (isset($queryData['page']) && !empty($queryData['page'])) {
-            $this->page = $queryData['page'];
-        }
-
-        if (empty($queryData['fields'])) {
-            $fields = $this->fields;
-            $allFields = true;
-        } else {
-            // Accept fields qualified with the model alias (e.g. 'User.id', used by find('list'))
-            $fields = [];
-            foreach ((array)$queryData['fields'] as $field) {
-                if (is_string($field) && str_starts_with($field, $model->alias . '.')) {
-                    $field = substr($field, strlen($model->alias) + 1);
-                }
-                $fields[] = $field;
-            }
-            $allFields = false;
-            $_fieldIndex = [];
-            $index = 0;
-            // generate an index array of all wanted fields
-            foreach ($this->fields as $field) {
-                if (in_array($field, $fields)) {
-                    $_fieldIndex[] = $index;
-                }
-                $index++;
-            }
-        }
-
-        $lineCount = 0;
-        $recordCount = 0;
-        $findCount = 0;
-        $resultSet = [];
-
-        while (($data = fgetcsv($this->handle[$model->table], 8192, $this->delimiter, '"', '\\')) !== false) {
-            if ($lineCount === 0) {
-                $lineCount++;
-                continue;
-            }
-
-            // Skip over records, that are not complete
-            if (count($data) < $this->maxCol) {
-                continue;
-            }
-
-            $record = [];
-            $i = 0;
-
-            foreach ((array)$this->fields as $field) {
-                $record[$model->alias][$field] = $data[$i++];
-            }
-
-            if ($this->_checkConditions($record, $queryData['conditions'], $model)) {
-                // Compute the virtual pagenumber
-                $page = floor($findCount / $this->limit) + 1;
-                if ($this->page <= $page) {
-                    if (!$allFields) {
-                        $record = [];
-                        if (count($_fieldIndex) > 0) {
-                            foreach ($_fieldIndex as $i) {
-                                $record[$model->alias][$this->fields[$i]] = $data[$i];
-                            }
-                        }
-                    }
-                    $resultSet[] = $record;
-                    $recordCount++;
-                }
-            }
-            unset($record);
-            $findCount++;
-
-            if ($recordCount >= $this->limit) {
-                break;
-            }
-        }
-
-        if ($model->findQueryType === 'count') {
-            return [[['count' => count($resultSet)]]];
-        }
-
-        return $resultSet;
-    }
-
-    /**
-     * Helper method to remove query metadata in given data array.
-     *
-     * @param array $data Data
-     * @return array Cleaned Data
-     */
-    protected function _scrubQueryData($data)
-    {
-        foreach (['conditions', 'fields', 'joins', 'order', /*'limit', 'offset',*/ 'group'] as $key) {
-            if (!isset($data[$key]) || empty($data[$key])) {
-                $data[$key] = [];
-            }
-        }
-        if (!isset($data['limit']) || empty($data['limit'])) {
-            $data['limit'] = PHP_INT_MAX;
-        }
-        if (!isset($data['offset']) || empty($data['offset'])) {
-            $data['offset'] = 0;
-        }
-
-        return $data;
-    }
-
-    /**
-     * Helper method to check conditions.
-     *
-     * @param array $record
-     * @param array $conditions
+     * @param array<string, string> $row Row
+     * @param array $conditions Conditions
+     * @param string $alias Model alias
      * @return bool
      */
-    protected function _checkConditions($record, $conditions, $model)
+    protected function matchesAny(array $row, array $conditions, string $alias): bool
     {
-        $result = true;
-        foreach ($conditions as $name => $value) {
-            $alias = $model->alias;
-            if (strpos($name, '.') !== false) {
-                [$alias, $name] = explode('.', $name);
-            }
-
-            if (strtolower($name) === 'or') {
-                $cond = $value;
-                $result = false;
-                foreach ($cond as $name => $value) {
-                    [, $name] = pluginSplit($name);
-                    if (is_array($value)) {
-                        foreach ($value as $val) {
-                            if (Set::matches($this->_createRule($name, $val), $record[$alias])) {
-                                $result = true;
-                            }
-                        }
-                    } else {
-                        if (Set::matches($this->_createRule($name, $value), $record[$alias])) {
-                            $result = true;
-                        }
-                    }
-                }
-            } else {
-                if (!Set::matches($this->_createRule($name, $value), $record[$alias])) {
-                    return false;
-                }
+        foreach ($conditions as $key => $value) {
+            if ($this->matchesConditions($row, [$key => $value], $alias)) {
+                return true;
             }
         }
 
-        return $result;
+        return false;
     }
 
     /**
-     * Helper method to crete rule.
+     * Whether a row matches a condition such as `['User.id' => 1]` or `['User.age >=' => 20]`.
      *
-     * @param string $name
-     * @param string $value
+     * @param array<string, string> $row Row
+     * @param string $key Field with an optional operator
+     * @param mixed $expected Expected value (an array means IN, or NOT IN with `!=`)
+     * @param string $alias Model alias
+     * @return bool
+     * @throws InvalidArgumentException When the operator is not supported
+     */
+    protected function matchesCondition(array $row, string $key, $expected, string $alias): bool
+    {
+        $parts = preg_split('/\s+/', trim($key), 2);
+        $field = $this->stripAlias($parts[0], $alias);
+        $operator = $parts[1] ?? '=';
+        if (!in_array($operator, self::OPERATORS, true)) {
+            throw new InvalidArgumentException('CsvSource does not support the operator: ' . $operator);
+        }
+        if (!array_key_exists($field, $row)) {
+            return false;
+        }
+
+        if (is_array($expected)) {
+            $in = false;
+            foreach ($expected as $item) {
+                if ($this->compare($row[$field], '=', $item)) {
+                    $in = true;
+                    break;
+                }
+            }
+
+            return in_array($operator, ['!=', '<>'], true) ? !$in : $in;
+        }
+
+        return $this->compare($row[$field], $operator, $expected);
+    }
+
+    /**
+     * Compares a value. Numeric values are compared as numbers, others as strings.
+     *
+     * @param string $actual Value in the file
+     * @param string $operator Operator
+     * @param mixed $expected Expected value (null matches an empty value)
+     * @return bool
+     */
+    protected function compare(string $actual, string $operator, $expected): bool
+    {
+        if ($expected === null) {
+            return in_array($operator, ['!=', '<>'], true) ? $actual !== '' : $actual === '';
+        }
+
+        $expected = is_bool($expected) ? (string)(int)$expected : (string)$expected;
+        $result = is_numeric($actual) && is_numeric($expected)
+            ? (float)$actual <=> (float)$expected
+            : strcmp($actual, $expected);
+
+        return match ($operator) {
+            '=' => $result === 0,
+            '!=', '<>' => $result !== 0,
+            '<' => $result < 0,
+            '<=' => $result <= 0,
+            '>' => $result > 0,
+            '>=' => $result >= 0,
+        };
+    }
+
+    /**
+     * Removes the model alias from a field name.
+     *
+     * @param string $field Field
+     * @param string $alias Model alias
      * @return string
      */
-    protected function _createRule($name, $value)
+    protected function stripAlias(string $field, string $alias): string
     {
-        if (strpos($name, ' ') !== false) {
-            return [str_replace(' ', '', $name) . $value];
-        }
-
-        return ["{$name}={$value}"];
-    }
-
-    /**
-     * Calculate
-     *
-     * @param Model $model
-     * @param mixed $func
-     * @param array $params
-     * @return array
-     */
-    public function calculate(Model $model, $func, $params = [])
-    {
-        return ['count' => true];
+        return str_starts_with($field, $alias . '.') ? substr($field, strlen($alias) + 1) : $field;
     }
 }

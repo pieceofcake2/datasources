@@ -33,18 +33,18 @@ This plugin contains various datasources contributed by the core CakePHP team an
 
 ### CsvSource
 
+A read-only datasource for files with delimiter separated values (CSV, TSV). Each model reads the file named after its `$useTable`, and the first line of the file is the header (column names).
+
 ```php
 class DATABASE_CONFIG {
     public $tsv = [
         'datasource' => 'Datasources.CsvSource',
         'path' => ROOT . DS . 'resources' . DS . 'tsv',
         'extension' => 'tsv',
-        'delimiter' => "\t", // null (default) detects ',' or ';' from the first line
+        'delimiter' => "\t", // null (default) detects ',', ';' or "\t" from the header
     ];
 }
 ```
-
-The first line of each file is the header (column names). A model reads the file named after `$useTable`.
 
 ```php
 class Language extends AppModel
@@ -53,8 +53,14 @@ class Language extends AppModel
     public $useTable = 'language'; // resources/tsv/language.tsv
 }
 
-$this->Language->find('list'); // ['1' => 'English', ...]
+$this->Language->find('list'); // ['1' => 'English', ...] (displayField is detected from the header)
+$this->Language->find('first', ['conditions' => ['Language.id' => [1, 2]]]);
 ```
+
+- Supported queries: conditions (equality, `IN` by an array value, `!=` / `<>`, `<`, `<=`, `>`, `>=`, nested `OR` / `AND` / `NOT`), `fields`, `limit`, `offset` and `page`. Numeric values are compared as numbers. Unsupported conditions (SQL strings, `LIKE` and so on) throw `InvalidArgumentException`
+- `describe()` returns the schema (all columns are strings), so `hasField()` and the default `displayField` work
+- A UTF-8 BOM in the header is removed. Rows with fewer columns than the header are skipped
+- A missing file throws `MissingTableException`
 
 ### Using the datasources plugin
 
