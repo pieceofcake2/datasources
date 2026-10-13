@@ -71,6 +71,33 @@ class BlogTest extends CakeTestModel
 }
 
 /**
+ * Test Model for Tsv/Language.tsv
+ */
+class LanguageTest extends CakeTestModel
+{
+    /**
+     * Table to use
+     *
+     * @var string
+     */
+    public $useTable = 'Language';
+
+    /**
+     * Datasource
+     *
+     * @var string
+     */
+    public $useDbConfig = 'test_tsv';
+
+    /**
+     * Display field
+     *
+     * @var string
+     */
+    public $displayField = 'name';
+}
+
+/**
  * CsvSourceTestCase
  */
 class CsvSourceTest extends CakeTestCase
@@ -285,6 +312,33 @@ class CsvSourceTest extends CakeTestCase
             ],
         ]]);
         $this->assertEquals($expected, $result);
+    }
+
+    /**
+     * testFindWithDelimiter
+     *
+     * @return void
+     */
+    public function testFindWithDelimiter(): void
+    {
+        ConnectionManager::create('test_tsv', array_merge($this->config, [
+            'path' => $this->config['path'] . DS . 'Tsv',
+            'extension' => 'tsv',
+            'delimiter' => "\t",
+        ]));
+        $model = ClassRegistry::init('LanguageTest');
+
+        $expected = [
+            '1' => 'English',
+            '2' => 'Chinese, Mandarin',
+            '3' => 'French; Belgian',
+        ];
+        $this->assertEquals($expected, $model->find('list'));
+
+        $expected = ['LanguageTest' => ['id' => '2', 'name' => 'Chinese, Mandarin']];
+        $this->assertEquals($expected, $model->find('first', ['conditions' => ['LanguageTest.id' => 2]]));
+
+        $this->assertSame(3, $model->find('count'));
     }
 
     /**

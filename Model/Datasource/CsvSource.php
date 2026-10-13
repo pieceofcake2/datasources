@@ -20,6 +20,7 @@
  *     'datasource' => 'Datasources.CsvSource',
  *     'path' => '/path/to/file', // Path
  *     'extension' => 'csv', // File extension
+ *     'delimiter' => null, // Column delimiter (e.g. "\t" for TSV). null detects ',' or ';' from the first line
  *     'readonly' => true, // Mark for read only access
  *     'recursive' => false // Only false is supported at the moment
  *   );
@@ -90,6 +91,7 @@ class CsvSource extends DataSource
         'datasource' => 'csv',
         'path' => '.',
         'extension' => 'csv',
+        'delimiter' => null,
         'readonly' => true,
         'recursive' => false,
     ];
@@ -191,7 +193,18 @@ class CsvSource extends DataSource
     {
         $filename = $model->table . '.' . $this->config['extension'];
         $handle = fopen($this->config['path'] . DS . $filename, 'r');
-        $line = rtrim(fgets($handle));
+        $line = rtrim(fgets($handle), "\r\n");
+
+        if ($this->config['delimiter'] !== null) {
+            $this->delimiter = $this->config['delimiter'];
+            $this->fields = explode($this->delimiter, $line);
+            $this->maxCol = count($this->fields);
+            fclose($handle);
+
+            return true;
+        }
+
+        $line = rtrim($line);
         $dataComma = explode(',', $line);
         $dataSemicolon = explode(';', $line);
 

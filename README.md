@@ -31,6 +31,31 @@ This plugin contains various datasources contributed by the core CakePHP team an
 * Database/Firebird
 * Database/Odbc
 
+### CsvSource
+
+```php
+class DATABASE_CONFIG {
+    public $tsv = [
+        'datasource' => 'Datasources.CsvSource',
+        'path' => ROOT . DS . 'resources' . DS . 'tsv',
+        'extension' => 'tsv',
+        'delimiter' => "\t", // null (default) detects ',' or ';' from the first line
+    ];
+}
+```
+
+The first line of each file is the header (column names). A model reads the file named after `$useTable`.
+
+```php
+class Language extends AppModel
+{
+    public $useDbConfig = 'tsv';
+    public $useTable = 'language'; // resources/tsv/language.tsv
+}
+
+$this->Language->find('list'); // ['1' => 'English', ...]
+```
+
 ### Using the datasources plugin
 
 First download the repository and place it in `app/Plugin/Datasources` or on one of your plugin paths. You can then import and use the datasources in your App classes.
