@@ -125,7 +125,7 @@ class CsvSourceTest extends CakeTestCase
     {
         $this->config = [
             'datasource' => 'Datasources.CsvSource',
-            'path' => App::pluginPath('Datasources') . 'Test' . DS . 'File',
+            'path' => App::pluginPath('Datasources') . 'tests' . DS . 'File',
             'extension' => 'csv',
             'readonly' => true,
             'recursive' => false,

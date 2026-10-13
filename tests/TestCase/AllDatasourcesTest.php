@@ -13,7 +13,7 @@ class AllDatasourcesTest extends CakeTestCase
     {
         $suite = new CakeTestSuite('All Datasources test');
 
-        $path = CakePlugin::path('Datasources') . 'Test' . DS . 'Case' . DS;
+        $path = CakePlugin::path('Datasources') . 'tests' . DS . 'TestCase' . DS;
         $suite->addTestDirectoryRecursive($path);
 
         return $suite;
