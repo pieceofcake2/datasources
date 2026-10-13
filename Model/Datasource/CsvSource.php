@@ -278,7 +278,7 @@ class CsvSource extends DataSource
         $findCount = 0;
         $resultSet = [];
 
-        while (($data = fgetcsv($this->handle[$model->table], 8192, $this->delimiter)) !== false) {
+        while (($data = fgetcsv($this->handle[$model->table], 8192, $this->delimiter, '"', '\\')) !== false) {
             if ($lineCount === 0) {
                 $lineCount++;
                 continue;
