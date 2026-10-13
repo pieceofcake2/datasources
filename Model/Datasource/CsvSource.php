@@ -260,7 +260,14 @@ class CsvSource extends DataSource
             $fields = $this->fields;
             $allFields = true;
         } else {
-            $fields = $queryData['fields'];
+            // Accept fields qualified with the model alias (e.g. 'User.id', used by find('list'))
+            $fields = [];
+            foreach ((array)$queryData['fields'] as $field) {
+                if (is_string($field) && str_starts_with($field, $model->alias . '.')) {
+                    $field = substr($field, strlen($model->alias) + 1);
+                }
+                $fields[] = $field;
+            }
             $allFields = false;
             $_fieldIndex = [];
             $index = 0;
