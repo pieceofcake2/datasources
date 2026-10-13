@@ -36,3 +36,6 @@
 *.woff binary
 *.ttf binary
 *.eot binary
+
+# Keep CRLF line endings in test files
+tests/File/Tsv/Bom.tsv -text
