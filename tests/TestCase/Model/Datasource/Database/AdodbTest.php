@@ -275,6 +275,39 @@ class AdodbTest extends CakeTestCase
     }
 
     /**
+     * Test buildColumn quotes default values
+     */
+    public function testBuildColumnDefault(): void
+    {
+        $connection = adoNewConnection('mysqli');
+        $this->db->setDataDictionary(NewDataDictionary($connection, 'mysql'));
+
+        $result = $this->db->buildColumn(['name' => 'status', 'type' => 'string', 'null' => false, 'default' => 'draft']);
+        $this->assertSame("`status` VARCHAR(255) NOT NULL DEFAULT 'draft'", $result);
+
+        $result = $this->db->buildColumn(['name' => 'note', 'type' => 'string', 'null' => false, 'default' => "it's"]);
+        $this->assertSame("`note` VARCHAR(255) NOT NULL DEFAULT 'it''s'", $result);
+
+        $result = $this->db->buildColumn(['name' => 'count', 'type' => 'integer', 'null' => false, 'default' => '0']);
+        $this->assertSame("`count` INTEGER(11) NOT NULL DEFAULT '0'", $result);
+
+        $result = $this->db->buildColumn(['name' => 'title', 'type' => 'string', 'null' => false, 'default' => '']);
+        $this->assertSame("`title` VARCHAR(255) NOT NULL DEFAULT ''", $result);
+
+        $result = $this->db->buildColumn(['name' => 'status', 'type' => 'string', 'null' => true, 'default' => 'draft']);
+        $this->assertSame("`status` VARCHAR(255) DEFAULT 'draft'", $result);
+
+        $result = $this->db->buildColumn(['name' => 'status', 'type' => 'string', 'default' => 'draft']);
+        $this->assertSame("`status` VARCHAR(255) DEFAULT 'draft'", $result);
+
+        $result = $this->db->buildColumn(['name' => 'note', 'type' => 'string', 'null' => true]);
+        $this->assertSame('`note` VARCHAR(255) DEFAULT NULL', $result);
+
+        $result = $this->db->buildColumn(['name' => 'note', 'type' => 'string', 'null' => true, 'default' => null]);
+        $this->assertSame('`note` VARCHAR(255) DEFAULT NULL', $result);
+    }
+
+    /**
      * Test buildColumn without an ADOdb data dictionary
      */
     public function testBuildColumnWithoutDataDictionary(): void

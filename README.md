@@ -125,6 +125,12 @@ This will start:
 - OpenLDAP server on port 389
 - phpLDAPadmin on http://localhost:8080
 
+The tests connect to the LDAP server on port 389. Set the `LDAP_PORT` environment variable if it listens on another port:
+
+```bash
+LDAP_PORT=10389 ./vendor/bin/phpunit
+```
+
 You can access phpLDAPadmin to inspect the LDAP directory:
 - URL: http://localhost:8080
 - Login DN: `cn=admin,dc=cakephp,dc=org`

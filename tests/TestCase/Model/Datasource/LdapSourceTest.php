@@ -17,6 +17,18 @@
 
 App::uses('ConnectionManager', 'Model');
 App::uses('Model', 'Model');
+App::uses('LdapSource', 'Datasources.Model/Datasource');
+
+/**
+ * LdapSource exposing protected methods for testing
+ */
+class TestLdapSource extends LdapSource
+{
+    public function hostUri($host, $port): string
+    {
+        return $this->_hostUri($host, $port);
+    }
+}
 
 /**
  * Import required classes
@@ -41,6 +53,13 @@ class LdapSourceTest extends CakeTestCase
      *
      * @return void
      */
+    /**
+     * Connection settings of the test LDAP server
+     *
+     * @var array
+     */
+    protected $config = [];
+
     public function setUp(): void
     {
         parent::setUp();
@@ -48,7 +67,7 @@ class LdapSourceTest extends CakeTestCase
         $config = [
             'datasource' => 'Datasources.LdapSource',
             'host' => '127.0.0.1',
-            'port' => 389,
+            'port' => (int)(getenv('LDAP_PORT') ?: 389),
             'login' => 'cn=admin,dc=cakephp,dc=org',
             'password' => 'password',
             'basedn' => 'dc=cakephp,dc=org',
@@ -57,6 +76,7 @@ class LdapSourceTest extends CakeTestCase
             'database' => '',
         ];
 
+        $this->config = $config;
         $this->loadLdapFixtures($config);
 
         $ldap = ConnectionManager::create('test_ldap', $config);
@@ -83,7 +103,7 @@ class LdapSourceTest extends CakeTestCase
 
     public function loadLdapFixtures($config): void
     {
-        $ldap = ldap_connect($config['host'], $config['port']);
+        $ldap = ldap_connect('ldap://' . $config['host'] . ':' . $config['port']);
 
         ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, $config['version']);
 
@@ -302,5 +322,89 @@ class LdapSourceTest extends CakeTestCase
         ]);
 
         $this->assertEquals(2, $model->getNumRows());
+    }
+
+    /**
+     * A host that refuses connections
+     *
+     * @var string
+     */
+    protected const DEAD_HOST = 'ldap://127.0.0.1:1';
+
+    public function testConnectUsesConfiguredPort(): void
+    {
+        $ldap = new LdapSource(['port' => 1] + $this->config);
+        $this->assertFalse($ldap->isConnected());
+
+        $ldap = new LdapSource($this->config);
+        $this->assertTrue($ldap->isConnected());
+    }
+
+    public function testConnectFailsWithoutFailover(): void
+    {
+        $ldap = new LdapSource(['host' => self::DEAD_HOST] + $this->config);
+
+        $this->assertFalse($ldap->isConnected());
+        $this->assertFalse($ldap->connect());
+        $this->assertNotEmpty($ldap->lastError());
+        $this->assertSame($ldap->lastError(), $ldap->error);
+    }
+
+    public function testConnectFailsWhenAllHostsFail(): void
+    {
+        $ldap = new LdapSource(['host' => [self::DEAD_HOST, 'ldap://127.0.0.1:2']] + $this->config);
+
+        $this->assertFalse($ldap->isConnected());
+        $this->assertNotEmpty($ldap->lastError());
+    }
+
+    public function testConnectFailsWithoutHost(): void
+    {
+        $ldap = new LdapSource(['host' => []] + $this->config);
+
+        $this->assertFalse($ldap->isConnected());
+        $this->assertSame('No LDAP host configured', $ldap->lastError());
+    }
+
+    public function testConnectFailover(): void
+    {
+        $ldap = new LdapSource(['host' => [self::DEAD_HOST, $this->config['host']]] + $this->config);
+        $this->assertTrue($ldap->isConnected());
+
+        // Reconnecting starts with the host that worked
+        $this->assertTrue($ldap->reconnect());
+        $this->assertNull($ldap->lastError());
+    }
+
+    public function testConnectInvalidCredentials(): void
+    {
+        $ldap = new LdapSource(['password' => 'wrong'] + $this->config);
+
+        $this->assertFalse($ldap->isConnected());
+        $this->assertStringStartsWith('49: ', $ldap->lastError());
+        $this->assertStringStartsWith('49: ', $ldap->auth($this->config['login'], 'wrong'));
+        $this->assertTrue($ldap->auth($this->config['login'], $this->config['password']));
+    }
+
+    public function testHostUri(): void
+    {
+        $ldap = new TestLdapSource($this->config);
+
+        $this->assertSame('ldap://ldap.example.com:389', $ldap->hostUri('ldap.example.com', 389));
+        $this->assertSame('ldap://ldap.example.com:10389', $ldap->hostUri('ldap.example.com', '10389'));
+        $this->assertSame('ldap://ldap.example.com', $ldap->hostUri('ldap.example.com', null));
+        $this->assertSame('ldap://ldap.example.com:1389', $ldap->hostUri('ldap.example.com:1389', 389));
+        $this->assertSame('ldap://[::1]:389', $ldap->hostUri('::1', 389));
+        $this->assertSame('ldaps://ldap.example.com', $ldap->hostUri('ldaps://ldap.example.com', 389));
+        $this->assertSame('ldap://ldap.example.com:1389', $ldap->hostUri('ldap://ldap.example.com:1389', 389));
+    }
+
+    public function testFindSchemaWithInvalidSchemaDn(): void
+    {
+        $ldap = ConnectionManager::getDataSource('test_ldap');
+        $ldap->SchemaDN = 'cn=missing,dc=cakephp,dc=org';
+
+        $model = new LdapPerson();
+        $this->assertSame([], $model->findSchema());
     }
 }

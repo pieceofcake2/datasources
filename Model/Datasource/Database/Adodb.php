@@ -639,27 +639,24 @@ class Adodb extends DataSource
             $out .= '(' . $length . ')';
         }
         $_notNull = $_default = $_autoInc = $_constraint = $_unsigned = false;
+        $_primary = isset($column['key']) && $column['key'] === 'primary';
 
-        if (isset($column['key']) && $column['key'] === 'primary' && $type === 'integer') {
+        if ($_primary && $type === 'integer') {
             $_constraint = '';
             $_autoInc = true;
-        } elseif (isset($column['key']) && $column['key'] === 'primary') {
+        } elseif ($_primary) {
             $_notNull = '';
-        } elseif (isset($column['default']) && isset($column['null']) && $column['null'] == false) {
-            $_notNull = true;
-            $_default = $column['default'];
-        } elseif (isset($column['null']) && $column['null'] == true) {
-            $_notNull = false;
-            $_default = 'NULL';
         }
-        if (isset($column['default']) && $_default == false) {
-            $_default = $this->value($column['default']);
+        if (isset($column['default'])) {
+            // The data dictionary writes the default as-is, so it has to be quoted here.
+            $_default = $this->value($column['default'], $type);
+        } elseif (!$_primary && isset($column['null']) && $column['null'] == true) {
+            $_default = 'NULL';
         }
         if (isset($column['null']) && $column['null'] == false) {
             $_notNull = true;
         }
         //use concrete instance of DataDict to make the suffixes for us.
-        $_primary = isset($column['key']) && $column['key'] === 'primary';
         $_pkey = [];
         $out .= $this->_adodbDataDict->_CreateSuffix($out, $metaType, $_notNull, $_default, $_autoInc, $_constraint, $_unsigned, $_primary, $_pkey);
 

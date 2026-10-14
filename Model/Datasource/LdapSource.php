@@ -268,8 +268,11 @@ class LdapSource extends DataSource
     /**
      * connect([$bindDN], [$passwd])  create the actual connection to the ldap server
      * This function supports failover, so if your config['host'] is an array it will try the first one, if it fails,
-     * jumps to the next and attempts to connect and so on.  If will also check try to setup any special connection options
-     * needed like referal chasing and tls support
+     * jumps to the next and attempts to connect and so on. Each host is tried once; if all of them fail, the
+     * connection fails. It will also setup any special connection options needed like referal chasing and tls support.
+     *
+     * A host can be a plain host name (or IP address), which is connected to on config['port'], or an LDAP URI
+     * such as `ldaps://ldap.example.com:636`, which is used as is.
      *
      * @param string $bindDN The users dn to bind with
      * @param string $passwd The password for the previously state bindDN
@@ -278,58 +281,100 @@ class LdapSource extends DataSource
     public function connect($bindDN = null, $passwd = null)
     {
         $config = array_merge($this->_baseConfig, $this->config);
-        $this->connected = false;
-        $hasFailover = false;
-        if (isset($config['host']) && is_array($config['host'])) {
-            $config['host'] = $config['host'][$this->_multiMasterUse];
-            if (count($this->config['host']) > 1 + $this->_multiMasterUse) {
-                $hasFailover = true;
-            }
-        }
-        $bindDN = empty($bindDN) ? $config['login'] : $bindDN;
-        $bindPasswd = empty($passwd) ? $config['password'] : $passwd;
-        $this->database = ldap_connect($config['host']);
-        if (!$this->database) {
-            //Try Next Server Listed
-            if ($hasFailover) {
-                CakeLog::write('ldap.error', 'Trying Next LDAP Server in list:' . $this->config['host'][$this->_multiMasterUse]);
-                $this->_multiMasterUse++;
-                if ($this->connect($bindDN, $passwd)) {
-                    return true;
-                }
-            }
+        $this->error = null;
+
+        $bindDN = empty($bindDN) ? ($config['login'] ?? null) : $bindDN;
+        $bindPasswd = empty($passwd) ? ($config['password'] ?? null) : $passwd;
+
+        $hosts = array_values((array)$config['host']);
+        $count = count($hosts);
+        if ($this->_multiMasterUse >= $count) {
+            $this->_multiMasterUse = 0;
         }
 
-        //Set our protocol version usually version 3
-        ldap_set_option($this->database, LDAP_OPT_PROTOCOL_VERSION, $config['version']);
+        // Start with the host that worked last time, then try each of the others once.
+        for ($i = 0; $i < $count; $i++) {
+            $index = ($this->_multiMasterUse + $i) % $count;
+            $uri = $this->_hostUri((string)$hosts[$index], $config['port']);
 
-        if ($config['tls']) {
-            if (!ldap_start_tls($this->database)) {
-                CakeLog::write('ldap.error', 'Ldap_start_tls failed');
-
-                return $this->disconnect();
+            if ($i > 0) {
+                CakeLog::write('ldap.error', 'Trying Next LDAP Server in list: ' . $uri);
             }
-        }
-        //So little known fact, if your php-ldap lib is built against openldap like pretty much every linux
-        //distro out their like redhat, suse etc. The connect doesn't acutally happen when you call ldap_connect
-        //it happens when you call ldap_bind.  So if you are using failover then you have to test here also.
-        // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
-        $bindResult = @ldap_bind($this->database, $bindDN, $bindPasswd); // @codingStandardsIgnoreLine
-        if (!$bindResult) {
+
+            // Release the previous connection before trying a host.
+            $this->disconnect();
+            $this->database = ldap_connect($uri);
+            if (!$this->database) {
+                $this->error = "Invalid LDAP host '{$uri}'";
+                CakeLog::write('ldap.error', $this->error);
+                continue;
+            }
+
+            //Set our protocol version usually version 3
+            ldap_set_option($this->database, LDAP_OPT_PROTOCOL_VERSION, $config['version']);
+
+            if (!empty($config['tls']) && !ldap_start_tls($this->database)) {
+                $this->error = $this->lastError() ?? 'ldap_start_tls failed';
+                CakeLog::write('ldap.error', "Ldap_start_tls failed for '{$uri}': " . $this->error);
+                continue;
+            }
+
+            //So little known fact, if your php-ldap lib is built against openldap like pretty much every linux
+            //distro out their like redhat, suse etc. The connect doesn't acutally happen when you call ldap_connect
+            //it happens when you call ldap_bind.  So if you are using failover then you have to test here also.
+            // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+            if (@ldap_bind($this->database, $bindDN, $bindPasswd)) { // @codingStandardsIgnoreLine
+                $this->_multiMasterUse = $index;
+                $this->connected = true;
+
+                return true;
+            }
+
+            $this->error = $this->lastError();
             if (ldap_errno($this->database) == 49) {
+                // Invalid credentials: the other servers would reject them as well.
                 CakeLog::write('ldap.error', "Auth failed for '$bindDN'!");
-            } else {
-                CakeLog::write('ldap.error', 'Trying Next LDAP Server in list:' . $this->config['host'][$this->_multiMasterUse]);
-                $this->_multiMasterUse++;
-                if ($this->connect($bindDN, $passwd)) {
-                    return true;
-                }
+                break;
             }
-        } else {
-            $this->connected = true;
+            CakeLog::write('ldap.error', "Could not connect to LDAP server '{$uri}': " . $this->error);
+        }
+
+        if ($count === 0) {
+            $this->disconnect();
+            $this->error = 'No LDAP host configured';
+            CakeLog::write('ldap.error', $this->error);
         }
 
         return $this->connected;
+    }
+
+    /**
+     * Builds the URI to pass to ldap_connect() for a configured host
+     *
+     * LDAP URIs (ldap://, ldaps://, ldapi://) are returned as is. Plain host names get the configured port,
+     * unless they already include one.
+     *
+     * @param string $host Host name, IP address or LDAP URI
+     * @param string|int|null $port Port to connect to
+     * @return string LDAP URI
+     */
+    protected function _hostUri($host, $port)
+    {
+        if (preg_match('#^ldap[si]?://#i', $host)) {
+            return $host;
+        }
+
+        if (filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $host = '[' . $host . ']';
+        } elseif (preg_match('/:\d+$/', $host)) {
+            return 'ldap://' . $host;
+        }
+
+        if ($port === null || $port === '') {
+            return 'ldap://' . $host;
+        }
+
+        return 'ldap://' . $host . ':' . $port;
     }
 
     /**
@@ -839,6 +884,9 @@ class LdapSource extends DataSource
      */
     public function lastError()
     {
+        if (!$this->database) {
+            return $this->error;
+        }
         if (ldap_errno($this->database)) {
             return ldap_errno($this->database) . ': ' . ldap_error($this->database);
         }
@@ -887,9 +935,10 @@ class LdapSource extends DataSource
     protected function _getLDAPschema()
     {
         $schemaTypes = ['objectclasses', 'attributetypes'];
-        $this->_result = ldap_read($this->database, $this->SchemaDN, $this->SchemaFilter, $schemaTypes, 0, 0, 0, LDAP_DEREF_ALWAYS);
-        if ($this->_result === null) {
-            CakeLog::write('ldap.error', "LDAP schema filter {$this->SchemaFilter} is invalid!");
+        // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+        $this->_result = @ldap_read($this->database, $this->SchemaDN, $this->SchemaFilter, $schemaTypes, 0, 0, 0, LDAP_DEREF_ALWAYS);
+        if ($this->_result === false) {
+            CakeLog::write('ldap.error', "Could not read the LDAP schema {$this->SchemaDN} with filter {$this->SchemaFilter}: " . $this->lastError());
 
             return [];
         }
@@ -1699,7 +1748,9 @@ class LdapSource extends DataSource
     public function setActiveDirectoryEnv()
     {
         //Need to disable referals for AD
-        ldap_set_option($this->database, LDAP_OPT_REFERRALS, 0);
+        if ($this->database) {
+            ldap_set_option($this->database, LDAP_OPT_REFERRALS, 0);
+        }
         $this->OperationalAttributes = ' + ';
         $this->SchemaFilter = '(objectClass=subschema)';
         $this->SchemaAttributes = 'objectClasses attributeTypes ldapSyntaxes matchingRules matchingRuleUse createTimestamp modifyTimestamp subschemaSubentry';
@@ -1722,7 +1773,16 @@ class LdapSource extends DataSource
      */
     public function setSchemaPath()
     {
-        $checkDN = ldap_read($this->database, '', 'objectClass=*', ['subschemaSubentry']);
+        if (!$this->connected) {
+            return;
+        }
+        // phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+        $checkDN = @ldap_read($this->database, '', 'objectClass=*', ['subschemaSubentry']);
+        if ($checkDN === false) {
+            CakeLog::write('ldap.error', 'Could not read the LDAP schema path: ' . $this->lastError());
+
+            return;
+        }
         $schemaEntry = ldap_get_entries($this->database, $checkDN);
         $this->SchemaDN = $schemaEntry[0]['subschemasubentry'][0];
     }
