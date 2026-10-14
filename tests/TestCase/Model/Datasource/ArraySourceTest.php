@@ -695,6 +695,41 @@ class ArraySourceTest extends CakeTestCase
     }
 
     /**
+     * testListSources
+     *
+     * @return void
+     */
+    public function testListSources(): void
+    {
+        $this->assertNull($this->Model->getDataSource()->listSources());
+    }
+
+    /**
+     * testLogPseudoQuery
+     *
+     * @return void
+     */
+    public function testLogPseudoQuery(): void
+    {
+        $db = $this->Model->getDataSource();
+        $db->getLog();
+
+        $this->Model->find('all', ['fields' => ['id', 'name']]);
+        $this->Model->find('count');
+        $this->Model->find('all');
+        $this->Model->field('name', ['id' => 2]);
+
+        $log = Hash::extract($db->getLog(), 'log.{n}.query');
+        $expected = [
+            '(symbolic) SELECT id, name FROM ArrayModel',
+            '(symbolic) SELECT COUNT(*) FROM ArrayModel',
+            '(symbolic) SELECT * FROM ArrayModel',
+            '(symbolic) SELECT name FROM ArrayModel WHERE (id = 2) LIMIT 0, 1',
+        ];
+        $this->assertSame($expected, $log);
+    }
+
+    /**
      * testFindList
      *
      * @return void

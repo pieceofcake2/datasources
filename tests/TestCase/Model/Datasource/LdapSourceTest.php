@@ -151,6 +151,19 @@ class LdapSourceTest extends CakeTestCase
         $this->assertFalse($ldap->isConnected());
     }
 
+    public function testClose(): void
+    {
+        $ldap = ConnectionManager::getDataSource('test_ldap');
+        $this->assertFalse($ldap->close());
+        $this->assertFalse($ldap->isConnected());
+    }
+
+    public function testQueryFindConfig(): void
+    {
+        $ldap = ConnectionManager::getDataSource('test_ldap');
+        $this->assertSame($ldap->config, $ldap->query('findConfig', [], null));
+    }
+
     public function testFind(): void
     {
         $model = new LdapPerson();

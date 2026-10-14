@@ -69,7 +69,7 @@ class ArraySource extends DataSource
      *
      * @param mixed $data Either a string with a column to quote. An array of columns
      *   to quote.
-     * @return string SQL field
+     * @return array|string SQL field, or a list of them when an array is given
      */
     public function name($data)
     {
@@ -109,11 +109,11 @@ class ArraySource extends DataSource
      * List sources
      *
      * @param mixed $data Unused
-     * @return bool Always false. It's not supported
+     * @return null Always null. It's not supported
      */
     public function listSources($data = null)
     {
-        return false;
+        return null;
     }
 
     /**
@@ -242,7 +242,7 @@ class ArraySource extends DataSource
             }
         }
         $this->_registerLog($model, $queryData, microtime(true) - $startTime, count($data));
-        $associations = $model->_associations;
+        $associations = $model->associations();
         if ($model->recursive > -1) {
             foreach ($associations as $type) {
                 foreach ($model->{$type} as $assoc => $assocData) {
@@ -254,13 +254,11 @@ class ArraySource extends DataSource
                         $db = ConnectionManager::getDataSource($linkModel->useDbConfig);
                     }
 
-                    if (isset($db)) {
-                        if (method_exists($db, 'queryAssociation')) {
-                            $stack = [$assoc];
-                            $db->queryAssociation($model, $linkModel, $type, $assoc, $assocData, $queryData, true, $data, $model->recursive - 1, $stack);
-                        }
-                        unset($db);
+                    if (method_exists($db, 'queryAssociation')) {
+                        $stack = [$assoc];
+                        $db->queryAssociation($model, $linkModel, $type, $assoc, $assocData, $queryData, true, $data, $model->recursive - 1, $stack);
                     }
+                    unset($db);
                 }
             }
         }
@@ -434,14 +432,16 @@ class ArraySource extends DataSource
                 $data = $this->read($linkModel, compact('conditions', 'limit') + $query);
             } elseif ($type === 'hasAndBelongsToMany' && $model->recursive > 0) {
                 $joinModel = ClassRegistry::init($assocData['with']);
-                $fields = [$joinModel->alias . '.' . $assocData['associationForeignKey']];
-                $conditions = [$joinModel->alias . '.' . $assocData['foreignKey'] => $record[$model->alias][$model->primaryKey]];
-                $recursive = -1;
-                $ids = $joinModel->getDataSource()->read($joinModel, compact('fields', 'conditions', 'recursive') + $query);
-                if ($ids) {
-                    $ids = Hash::extract($ids, "{n}.{$joinModel->alias}.{$assocData['associationForeignKey']}");
-                    $conditions = array_merge($query['conditions'], [$linkModel->alias . '.' . $linkModel->primaryKey => $ids]);
-                    $data = $this->read($linkModel, compact('conditions') + $query);
+                if ($joinModel instanceof Model) {
+                    $fields = [$joinModel->alias . '.' . $assocData['associationForeignKey']];
+                    $conditions = [$joinModel->alias . '.' . $assocData['foreignKey'] => $record[$model->alias][$model->primaryKey]];
+                    $recursive = -1;
+                    $ids = $joinModel->getDataSource()->read($joinModel, compact('fields', 'conditions', 'recursive') + $query);
+                    if ($ids) {
+                        $ids = Hash::extract($ids, "{n}.{$joinModel->alias}.{$assocData['associationForeignKey']}");
+                        $conditions = array_merge($query['conditions'], [$linkModel->alias . '.' . $linkModel->primaryKey => $ids]);
+                        $data = $this->read($linkModel, compact('conditions') + $query);
+                    }
                 }
             } else {
                 continue;
@@ -528,10 +528,10 @@ class ArraySource extends DataSource
         $out = '(symbolic) SELECT ';
         if (empty($queryData['fields'])) {
             $out .= '*';
-        } elseif ($queryData['fields']) {
+        } elseif ($queryData['fields'] === 'COUNT') {
             $out .= 'COUNT(*)';
         } else {
-            $out .= implode(', ', $queryData['fields']);
+            $out .= implode(', ', (array)$queryData['fields']);
         }
         $out .= ' FROM ' . $model->alias;
         if (!empty($queryData['conditions'])) {

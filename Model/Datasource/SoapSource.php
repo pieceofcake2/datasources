@@ -31,7 +31,7 @@ class SoapSource extends DataSource
     /**
      * SoapClient instance
      *
-     * @var SoapClient
+     * @var SoapClient|null
      */
     public $client = null;
 
@@ -41,6 +41,13 @@ class SoapSource extends DataSource
      * @var bool
      */
     public $connected = false;
+
+    /**
+     * Error message of the last failure
+     *
+     * @var string|false
+     */
+    public $error = false;
 
     /**
      * Default configuration
@@ -69,7 +76,7 @@ class SoapSource extends DataSource
     /**
      * Setup Configuration options
      *
-     * @return array Configuration options
+     * @return array|false Configuration options, or false when the SOAP extension is not available
      */
     protected function _parseConfig()
     {
@@ -98,12 +105,14 @@ class SoapSource extends DataSource
     /**
      * Connects to the SOAP server using the WSDL in the configuration
      *
-     * @param array $config An array defining the new configuration settings
      * @return bool True on success, false on failure
      */
     public function connect()
     {
         $options = $this->_parseConfig();
+        if ($options === false) {
+            return false;
+        }
         try {
             $this->client = new SoapClient($this->config['wsdl'], $options);
         } catch (SoapFault $fault) {
@@ -203,7 +212,7 @@ class SoapSource extends DataSource
      * Shows an error message and outputs the SOAP result if passed
      *
      * @param string $result A SOAP result
-     * @return string The last SOAP response
+     * @return void
      */
     public function showError($result = null)
     {

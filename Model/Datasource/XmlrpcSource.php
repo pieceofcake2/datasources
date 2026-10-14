@@ -37,9 +37,23 @@ class XmlrpcSource extends DataSource
     /**
      * HttpSocket Object
      *
-     * @var object HttpSocket
+     * @var HttpSocket|null
      */
     public $HttpSocket = null;
+
+    /**
+     * Error number of the last failed request
+     *
+     * @var int
+     */
+    public $errno = 0;
+
+    /**
+     * Error message of the last failed request
+     *
+     * @var string|null
+     */
+    public $error = null;
 
     /**
      * Cache for describe
@@ -83,7 +97,7 @@ class XmlrpcSource extends DataSource
     /**
      * Perform a XML RPC call
      *
-     * @param string $method XML-RPC method name
+     * @param mixed $method XML-RPC method name. Non-string values make the call return false.
      * @param array $params List with XML-RPC parameters
      * @param Model $model Reference to model (unused)
      * @return mixed Response of XML-RPC Server. If return false, $this->error contain a error message.
@@ -132,7 +146,12 @@ class XmlrpcSource extends DataSource
             'path' => $this->config['url'],
         ];
         try {
-            $response = $this->HttpSocket->post($uri, $xmlRequest, ['header' => ['Content-Type' => 'text/xml']]);
+            $response = $this->HttpSocket->request([
+                'method' => 'POST',
+                'uri' => $uri,
+                'body' => $xmlRequest,
+                'header' => ['Content-Type' => 'text/xml'],
+            ]);
         } catch (Exception $e) {
             return $this->_error(-32300, $e->getMessage());
         }
@@ -307,8 +326,6 @@ class XmlrpcSource extends DataSource
 
                 return $value;
         }
-
-        return null;
     }
 
     /**
