@@ -44,7 +44,7 @@ class MysqlLog extends Mysql
     {
         parent::logQuery($sql, $params);
         if (Configure::read('logQueries')) {
-            $this->log($this->_queriesLog[count($this->_queriesLog) - 1], 'sql');
+            CakeLog::write('sql', print_r($this->_queriesLog[count($this->_queriesLog) - 1], true));
         }
     }
 }

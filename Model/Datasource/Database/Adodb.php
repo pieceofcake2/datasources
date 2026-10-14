@@ -35,9 +35,23 @@ class Adodb extends DataSource
     /**
      * ADOConnection object with which we connect.
      *
-     * @var ADOConnection The connection object.
+     * @var ADOConnection|null The connection object.
      */
     protected $_adodb = null;
+
+    /**
+     * ADOdb data dictionary used to build column definitions.
+     *
+     * @var ADODB_DataDict|false|null
+     */
+    protected $_adodbDataDict = null;
+
+    /**
+     * ADOdb record set used to resolve column meta types.
+     *
+     * @var ADORecordSet|false|null
+     */
+    protected $_adodbMetatyper = null;
 
     /**
      * Result
@@ -75,16 +89,16 @@ class Adodb extends DataSource
     public $connected = false;
 
     /**
-     * Indicates the level of nested transactions
+     * Whether a transaction has been started
      *
-     * @var int
+     * @var bool
      */
     protected $_transactionStarted = false;
 
     /**
      * Result set
      *
-     * @var array
+     * @var array|null
      */
     public $results = null;
 
@@ -211,7 +225,7 @@ class Adodb extends DataSource
      */
     public function fetchRow(?string $sql = null): ?array
     {
-        if (!empty($sql) && is_string($sql) && strlen($sql) > 5) {
+        if (!empty($sql) && strlen($sql) > 5) {
             if (!$this->execute($sql)) {
                 return null;
             }
@@ -223,7 +237,7 @@ class Adodb extends DataSource
             $resultRow = $this->_result->FetchRow();
             $this->resultSet($resultRow);
 
-            return $this->fetchResult();
+            return $this->fetchResult() ?: null;
         }
     }
 
@@ -379,9 +393,9 @@ class Adodb extends DataSource
     /**
      * Returns a LIMIT statement in the correct format for the particular database.
      *
-     * @param int $limit Limit of results returned
+     * @param string|int $limit Limit of results returned
      * @param int $offset Offset from which to start results
-     * @return string SQL limit/offset statement
+     * @return string|null SQL limit/offset statement, or null when there is no limit
      * @todo Please change output string to whatever select your database accepts. adodb doesn't allow us to get the correct limit string out of it.
      */
     public function limit($limit, $offset = null)
@@ -428,10 +442,10 @@ class Adodb extends DataSource
     /**
      * Returns a quoted and escaped string of $data for use in an SQL statement.
      *
-     * @param string $data String to be prepared for use in an SQL statement
+     * @param mixed $data Data to be prepared for use in an SQL statement. Arrays are quoted element by element.
      * @param string $column The type of the column into which this data will be inserted
      * @param bool $null Whether or not numeric data should be handled automagically if no column data is provided
-     * @return string Quoted and escaped data
+     * @return array|string Quoted and escaped data
      */
     public function value($data, $column = null, $null = false)
     {
@@ -455,7 +469,7 @@ class Adodb extends DataSource
         }
 
         // Use ADOdb's qstr for quoting
-        if ($this->_adodb && method_exists($this->_adodb, 'qstr')) {
+        if ($this->_adodb) {
             return $this->_adodb->qstr($data);
         }
 
@@ -545,7 +559,7 @@ class Adodb extends DataSource
     /**
      * Fetches the next row from the current result set
      *
-     * @return unknown
+     * @return array|false The row, or false when there are no more rows
      */
     public function fetchResult()
     {
@@ -577,12 +591,12 @@ class Adodb extends DataSource
      *
      * @param array $column An array structured like the following: array('name'=>'value', 'type'=>'value'[, options]),
      *                      where options can be 'default', 'length', or 'key'.
-     * @return string
+     * @return string|null
      */
     public function buildColumn($column)
     {
-        $name = $type = null;
-        extract(array_merge(['null' => true], $column));
+        $name = $column['name'] ?? null;
+        $type = $column['type'] ?? null;
 
         if (empty($name) || empty($type)) {
             trigger_error('Column name or type not defined in schema', E_USER_WARNING);
@@ -593,6 +607,11 @@ class Adodb extends DataSource
         //$metaTypes = array_flip($this->_adodbColumnTypes);
         if (!isset($this->_adodbColumnTypes[$type])) {
             trigger_error("Column type {$type} does not exist", E_USER_WARNING);
+
+            return null;
+        }
+        if (!$this->_adodbDataDict) {
+            trigger_error('ADOdb data dictionary is not available', E_USER_WARNING);
 
             return null;
         }
@@ -640,7 +659,9 @@ class Adodb extends DataSource
             $_notNull = true;
         }
         //use concrete instance of DataDict to make the suffixes for us.
-        $out .= $this->_adodbDataDict->_CreateSuffix($out, $metaType, $_notNull, $_default, $_autoInc, $_constraint, $_unsigned);
+        $_primary = isset($column['key']) && $column['key'] === 'primary';
+        $_pkey = [];
+        $out .= $this->_adodbDataDict->_CreateSuffix($out, $metaType, $_notNull, $_default, $_autoInc, $_constraint, $_unsigned, $_primary, $_pkey);
 
         return $out;
     }

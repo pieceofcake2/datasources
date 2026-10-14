@@ -60,6 +60,17 @@ class DboAdoTestDb extends Adodb
     }
 
     /**
+     * Sets the ADOdb data dictionary
+     *
+     * @param ADODB_DataDict|false|null $dataDict Data dictionary
+     * @return void
+     */
+    public function setDataDictionary($dataDict): void
+    {
+        $this->_adodbDataDict = $dataDict;
+    }
+
+    /**
      * getLastQuery method
      *
      * @return array<string>
@@ -246,5 +257,43 @@ class AdodbTest extends CakeTestCase
         $expected = "'00010010001'";
         $result = $this->db->value('00010010001');
         $this->assertEquals($expected, $result);
+    }
+
+    /**
+     * Test buildColumn with an ADOdb data dictionary
+     */
+    public function testBuildColumn(): void
+    {
+        $connection = adoNewConnection('mysqli');
+        $this->db->setDataDictionary(NewDataDictionary($connection, 'mysql'));
+
+        $result = $this->db->buildColumn(['name' => 'id', 'type' => 'integer', 'key' => 'primary']);
+        $this->assertSame('`id` INTEGER(11) AUTO_INCREMENT', $result);
+
+        $result = $this->db->buildColumn(['name' => 'title', 'type' => 'string', 'null' => false]);
+        $this->assertSame('`title` VARCHAR(255) NOT NULL', $result);
+    }
+
+    /**
+     * Test buildColumn without an ADOdb data dictionary
+     */
+    public function testBuildColumnWithoutDataDictionary(): void
+    {
+        $this->db->setDataDictionary(false);
+
+        $errors = [];
+        set_error_handler(function (int $errno, string $errstr) use (&$errors): bool {
+            $errors[] = [$errno, $errstr];
+
+            return true;
+        });
+        try {
+            $result = $this->db->buildColumn(['name' => 'id', 'type' => 'integer']);
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertNull($result);
+        $this->assertSame([[E_USER_WARNING, 'ADOdb data dictionary is not available']], $errors);
     }
 }

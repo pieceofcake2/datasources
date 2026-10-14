@@ -15,6 +15,8 @@
  */
 
 App::uses('XmlrpcSource', 'Datasources.Model/Datasource');
+App::uses('HttpSocket', 'Network/Http');
+App::uses('HttpSocketResponse', 'Network/Http');
 
 /**
  * XML RPC Testing Model
@@ -310,6 +312,66 @@ class XmlrpcSourceTest extends CakeTestCase
         $Xmlrpc = new XmlrpcSource($config);
         $this->assertFalse($Xmlrpc->query('examples.getStateName', [1]));
         $this->assertEquals(-32700, $Xmlrpc->errno);
+    }
+
+    /**
+     * testRequestWithMockedSocket
+     *
+     * @return void
+     */
+    public function testRequestWithMockedSocket(): void
+    {
+        $response = new HttpSocketResponse();
+        $response->code = 200;
+        $response->body = '<?xml version="1.0"?><methodResponse><params><param><value><string>Alabama</string></value></param></params></methodResponse>';
+
+        $socket = $this->getMockBuilder(HttpSocket::class)->onlyMethods(['request'])->getMock();
+        $socket->response = $response;
+        $socket->expects($this->once())
+            ->method('request')
+            ->with([
+                'method' => 'POST',
+                'uri' => ['host' => '127.0.0.1', 'port' => 80, 'path' => '/RPC2'],
+                'body' => $this->Xmlrpc->generateXML('examples.getStateName', [1]),
+                'header' => ['Content-Type' => 'text/xml'],
+            ])
+            ->willReturn($response);
+
+        $this->Xmlrpc->HttpSocket = $socket;
+        $this->assertSame('Alabama', $this->Xmlrpc->query('examples.getStateName', [1]));
+        $this->assertSame(0, $this->Xmlrpc->errno);
+    }
+
+    /**
+     * testRequestWithHttpError
+     *
+     * @return void
+     */
+    public function testRequestWithHttpError(): void
+    {
+        $response = new HttpSocketResponse();
+        $response->code = 404;
+
+        $socket = $this->getMockBuilder(HttpSocket::class)->onlyMethods(['request'])->getMock();
+        $socket->response = $response;
+        $socket->method('request')->willReturn($response);
+
+        $this->Xmlrpc->HttpSocket = $socket;
+        $this->assertFalse($this->Xmlrpc->query('examples.getStateName', [1]));
+        $this->assertSame(-32300, $this->Xmlrpc->errno);
+        $this->assertNotEmpty($this->Xmlrpc->error);
+    }
+
+    /**
+     * testQueryWithNonStringMethod
+     *
+     * @return void
+     */
+    public function testQueryWithNonStringMethod(): void
+    {
+        $this->assertFalse($this->Xmlrpc->query(1));
+        $this->assertSame(0, $this->Xmlrpc->errno);
+        $this->assertNull($this->Xmlrpc->error);
     }
 
     /**

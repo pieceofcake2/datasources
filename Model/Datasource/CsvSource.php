@@ -103,12 +103,14 @@ class CsvSource extends DataSource
     /**
      * Closes the folder.
      *
-     * @return void
+     * @return bool Always true
      */
-    public function close(): void
+    public function close(): bool
     {
         $this->folder = null;
         $this->connected = false;
+
+        return true;
     }
 
     /**
@@ -405,7 +407,7 @@ class CsvSource extends DataSource
      * Compares a value. Numeric values are compared as numbers, others as strings.
      *
      * @param string $actual Value in the file
-     * @param string $operator Operator
+     * @param '='|'!='|'<>'|'<'|'<='|'>'|'>=' $operator Operator
      * @param mixed $expected Expected value (null matches an empty value)
      * @return bool
      */

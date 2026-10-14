@@ -114,8 +114,8 @@ class CsvSourceTest extends CakeTestCase
     public function testClose(): void
     {
         $source = new CsvSource($this->config);
-        $source->close();
 
+        $this->assertTrue($source->close());
         $this->assertFalse($source->connected);
     }
 
