@@ -1,0 +1,28 @@
+includes:
+    - vendor/pieceofcake2/phpstan-cakephp2/extension.neon
+
+parameters:
+    level: 5
+    phpVersion: 80000
+    paths:
+        - Model
+    excludePaths:
+        # CakePHP 1.x-era sources that were never ported to CakePHP 2 (non-PDO drivers,
+        # cakeError(), Model::$schema, ...). They fail to load on PHP 8 because their
+        # method signatures are incompatible with DataSource/DboSource.
+        - Model/Datasource/CouchdbSource.php
+        - Model/Datasource/Database/Db2.php
+        - Model/Datasource/Database/Firebird.php
+        - Model/Datasource/Database/Odbc.php
+    bootstrapFiles:
+        - tests/bootstrap.php
+    scanFiles:
+        # ADODB_DataDict is not autoloaded; NewDataDictionary() includes it at runtime
+        - vendor/adodb/adodb-php/adodb-datadict.inc.php
+    ignoreErrors:
+        # LDAP\Connection and LDAP\Result only exist on PHP 8.1+ (the ldap functions return resources on PHP 8.0)
+        -
+            message: '#^Class LDAP\\(Connection|Result) not found\.$#'
+            identifier: class.notFound
+            path: Model/Datasource/LdapSource.php
+            count: 2
