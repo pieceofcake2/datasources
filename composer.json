@@ -1,6 +1,6 @@
 {
     "name": "pieceofcake2/datasources",
-    "description": "CakePHP 2 Datasources Plugin",
+    "description": "CakePHP 2 datasources: ArraySource for records defined in a model, CsvSource for CSV and TSV files, and more",
     "type": "cakephp-plugin",
     "keywords": ["cakephp", "cakephp2", "datasources", "adodb", "couchdb", "db2", "firebird", "ldap", "odbc", "sqlserver", "sqlite", "sybase"],
     "license": "MIT",
