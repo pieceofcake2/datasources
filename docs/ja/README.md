@@ -26,8 +26,8 @@ composer require pieceofcake2/datasources
 
 | レイアウト | `installer-paths` |
 | --- | --- |
-| モダン (`config/`, `src/`, `templates/`, `plugins/`) | `"plugins/{$name}/": ["type:cakephp-plugin"]` |
-| レガシー (`app/Config/`, `app/Plugin/`) | `"app/Plugin/{$name}/": ["type:cakephp-plugin"]` |
+| モダン (`config/`、`src/`、`templates/`、`plugins/`) | `"plugins/{$name}/": ["type:cakephp-plugin"]` |
+| レガシー (`app/Config/`、`app/Plugin/`) | `"app/Plugin/{$name}/": ["type:cakephp-plugin"]` |
 
 `config/bootstrap.php` (レガシーレイアウトでは `app/Config/bootstrap.php`) でプラグインを読み込みます。
 すでに `CakePlugin::loadAll()` を使っている場合は不要です。
@@ -83,7 +83,7 @@ class DATABASE_CONFIG
 App::uses('XmlrpcSource', 'Datasources.Model/Datasource');
 ```
 
-PDO ベースのデータベースのデータソースの場合は次のようにします。
+また、PDO ベースのデータベースのデータソースの場合は次のようにします。
 
 ```php
 class DATABASE_CONFIG
@@ -165,11 +165,11 @@ $this->Language->find('first', ['conditions' => ['Language.id' => [1, 2]]]);
 - 対応しているクエリは、conditions (等価、配列の値による `IN`、`!=` / `<>`、`<`、`<=`、
   `>`、`>=`、ネストした `OR` / `AND` / `NOT`)、`fields`、`limit`、`offset` と `page` です。
   数値は数値として比較されます。対応していない条件 (SQL の文字列、`LIKE` など) は
-  `InvalidArgumentException` をスローします
+  `InvalidArgumentException` を投げます
 - `describe()` はスキーマ (すべてのカラムが文字列) を返すので、`hasField()` とデフォルトの
   `displayField` が動作します
 - ヘッダーの UTF-8 BOM は取り除かれます。ヘッダーよりカラムの少ない行はスキップされます
-- ファイルが存在しない場合は `MissingTableException` をスローします
+- ファイルが存在しない場合は `MissingTableException` を投げます
 
 <a id="development"></a>
 
