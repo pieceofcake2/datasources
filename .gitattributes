@@ -39,6 +39,3 @@
 
 # Keep CRLF line endings in test files
 tests/File/Tsv/Bom.tsv -text
-
-# Exclude the documentation from Composer dist archives.
-/docs export-ignore
