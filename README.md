@@ -20,7 +20,7 @@ files. This is a fork of [cakephp/datasources](https://github.com/cakephp/dataso
 
 ## Installation
 
-```
+```bash
 composer require pieceofcake2/datasources
 ```
 
