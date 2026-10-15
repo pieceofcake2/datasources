@@ -13,6 +13,13 @@ community, including ArraySource for records defined in a model and CsvSource fo
 files. This is a fork of [cakephp/datasources](https://github.com/cakephp/datasources) for
 [pieceofcake2/cakephp](https://github.com/pieceofcake2/cakephp).
 
+## Documentation
+
+- Website: https://pieceofcake2.github.io/datasources/
+- Markdown: [docs/README.md](docs/README.md) (for AI tools and offline reading)
+
+The Markdown documentation is also included in the Composer package, in the plugin's directory: `plugins/Datasources/docs/README.md` (the location depends on your `installer-paths`). Install the package with `--dev` if you only need it for development.
+
 ## Requirements
 
 * PHP 8.0+
@@ -23,10 +30,6 @@ files. This is a fork of [cakephp/datasources](https://github.com/cakephp/dataso
 ```
 composer require pieceofcake2/datasources
 ```
-
-## Documentation
-
-See the [documentation](https://pieceofcake2.github.io/datasources/).
 
 ## Reporting Issues
 
