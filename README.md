@@ -39,6 +39,15 @@ Please open an issue on [GitHub](https://github.com/pieceofcake2/datasources/iss
 
 See the [contribution guidelines](https://github.com/pieceofcake2/.github/blob/master/CONTRIBUTING.md).
 
+## Origin
+
+This package is a maintained fork of [cakephp/datasources](https://github.com/cakephp/datasources)
+(`cakephp/datasources` on Packagist, last upstream commit
+[`b741921`](https://github.com/cakephp/datasources/commit/b741921) on `master`), originally by the
+CakePHP community (Cake Software Foundation, Inc.). It is maintained for CakePHP 2 on modern PHP by
+[pieceofcake2](https://github.com/pieceofcake2). Changes from the original are listed in the
+[commit history since the fork](https://github.com/pieceofcake2/datasources/compare/b741921...2.x).
+
 ## License
 
 The MIT License. See [LICENSE](LICENSE).
