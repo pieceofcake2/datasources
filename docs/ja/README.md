@@ -226,7 +226,7 @@ phpLDAPadmin にアクセスして、LDAP ディレクトリの内容を確認�
 CakePHP コミュニティの役に立つデータソースや、そのアイデアがあれば、GitHub でプロジェクトを
 フォークし、データソースのクラス (とそのテストケース) をコミットして、プルリクエストを送ってください。
 [コントリビューションガイドライン](https://github.com/pieceofcake2/.github/blob/master/CONTRIBUTING.md)
-を参照してください。
+をご覧ください。
 
 <a id="origin"></a>
 
