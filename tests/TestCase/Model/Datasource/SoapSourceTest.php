@@ -20,7 +20,7 @@ class SoapSourceWithoutExtension extends SoapSource
      *
      * @return array|false
      */
-    protected function _parseConfig()
+    protected function _parseConfig(): array|false
     {
         return false;
     }
