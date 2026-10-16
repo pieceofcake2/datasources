@@ -65,7 +65,7 @@ The datasources can be used by defining them in your database configuration,
 class DATABASE_CONFIG
 {
     public $mySource = [
-        'datasource' => 'Datasources.XmlrpcSource',
+        'datasource' => 'Datasources.CsvSource',
         // ...
     ];
 }
@@ -74,20 +74,11 @@ class DATABASE_CONFIG
 or with `App::uses()`:
 
 ```php
-App::uses('XmlrpcSource', 'Datasources.Model/Datasource');
+App::uses('ArraySource', 'Datasources.Model/Datasource');
 ```
 
-or, for one of the PDO based database datasources:
-
-```php
-class DATABASE_CONFIG
-{
-    public $mySource = [
-        'datasource' => 'Datasources.Database/Firebird',
-        // ...
-    ];
-}
-```
+The database datasources under `Database/` are referenced as `Datasources.Database/<Name>`,
+but none of them is compatible yet (see [Available Datasources](#available-datasources)).
 
 ## ArraySource
 

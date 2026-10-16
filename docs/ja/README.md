@@ -71,7 +71,7 @@ pieceofcake2/cakephp に対応しているもの:
 class DATABASE_CONFIG
 {
     public $mySource = [
-        'datasource' => 'Datasources.XmlrpcSource',
+        'datasource' => 'Datasources.CsvSource',
         // ...
     ];
 }
@@ -80,20 +80,11 @@ class DATABASE_CONFIG
 または `App::uses()` で読み込みます。
 
 ```php
-App::uses('XmlrpcSource', 'Datasources.Model/Datasource');
+App::uses('ArraySource', 'Datasources.Model/Datasource');
 ```
 
-また、PDO ベースのデータベースのデータソースの場合は次のようにします。
-
-```php
-class DATABASE_CONFIG
-{
-    public $mySource = [
-        'datasource' => 'Datasources.Database/Firebird',
-        // ...
-    ];
-}
-```
+`Database/` 以下のデータベースのデータソースは `Datasources.Database/<Name>` のように指定しますが、
+まだどれも互換性がありません ([利用できるデータソース](#available-datasources) を参照してください)。
 
 <a id="arraysource"></a>
 
