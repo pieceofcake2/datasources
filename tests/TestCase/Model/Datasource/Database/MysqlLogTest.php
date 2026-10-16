@@ -31,7 +31,7 @@ class MysqlLogTestLog extends BaseLog
      * @param string $message Message
      * @return bool
      */
-    public function write($type, $message)
+    public function write($type, $message): bool
     {
         static::$messages[] = [$type, $message];
 
