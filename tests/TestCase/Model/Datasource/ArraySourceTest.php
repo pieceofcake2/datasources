@@ -16,11 +16,6 @@
  * @license       MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
-App::uses('ArraySource', 'Datasources.Model/Datasource');
-App::uses('ConnectionManager', 'Model');
-App::uses('CakeRequest', 'Network');
-App::uses('Controller', 'Controller');
-
 // Add new db config
 ConnectionManager::create('test_array', ['datasource' => 'Datasources.ArraySource']);
 

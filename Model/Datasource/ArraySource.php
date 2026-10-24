@@ -17,9 +17,6 @@
  * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
-App::uses('Hash', 'Utility');
-App::uses('ConnectionManager', 'Model');
-
 /**
  * Array Datasource
  *

@@ -14,10 +14,6 @@
  * @license       MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
-App::uses('XmlrpcSource', 'Datasources.Model/Datasource');
-App::uses('HttpSocket', 'Network/Http');
-App::uses('HttpSocketResponse', 'Network/Http');
-
 /**
  * XML RPC Testing Model
  */
@@ -413,7 +409,6 @@ class XmlrpcSourceTest extends CakeTestCase
         $connection = [
             'datasource' => 'Datasources.Datasource/XmlrpcTestSource',
         ];
-        App::uses('XmlrpcTestSource', 'Datasources.Model/Datasource');
         ConnectionManager::create('test_xmlrpc', $connection);
         $model = ClassRegistry::init('XmlrpcModel');
 

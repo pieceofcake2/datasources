@@ -8,10 +8,6 @@
  * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
-App::uses('Mysql', 'Model/Datasource/Database');
-App::uses('MysqlLog', 'Datasources.Model/Datasource/Database');
-App::uses('BaseLog', 'Log/Engine');
-
 /**
  * Log engine that keeps the written messages in memory
  */

@@ -77,11 +77,8 @@ class DATABASE_CONFIG
 }
 ```
 
-または `App::uses()` で読み込みます。
-
-```php
-App::uses('ArraySource', 'Datasources.Model/Datasource');
-```
+プラグインのクラスは Composer が読み込みます (`composer.json` のクラスマップに `Model/` があります)。
+`CsvSource` を継承したクラスのように、データソースのクラスを直接使うコードにも `App::uses()` は要りません。
 
 `Database/` 以下のデータベースのデータソースは `Datasources.Database/<Name>` のように指定しますが、
 まだどれも互換性がありません ([利用できるデータソース](#available-datasources) を参照してください)。

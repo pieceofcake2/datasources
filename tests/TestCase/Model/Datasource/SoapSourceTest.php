@@ -8,8 +8,6 @@
  * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
-App::uses('SoapSource', 'Datasources.Model/Datasource');
-
 /**
  * SoapSource that behaves as if the SOAP extension was not available
  */

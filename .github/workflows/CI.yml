@@ -41,6 +41,13 @@ jobs:
           - '8.5'
         db-type:
           - mysql
+        cakephp:
+          - ''
+        include:
+          # The previous minor version of CakePHP
+          - php-version: '8.4'
+            db-type: mysql
+            cakephp: '2.12.*'
 
     services:
       ldap:
@@ -133,9 +140,13 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-php${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.json') }}
+          key: ${{ runner.os }}-php${{ matrix.php-version }}-composer${{ matrix.cakephp }}-${{ hashFiles('**/composer.json') }}
           restore-keys: |
             ${{ runner.os }}-php${{ matrix.php-version }}-composer-
+
+      - name: Use the version of CakePHP
+        if: ${{ matrix.cakephp != '' }}
+        run: composer require --no-update --no-interaction "pieceofcake2/cakephp:${{ matrix.cakephp }}"
 
       - name: Install Composer Packages
         run: composer install --prefer-dist --no-interaction --no-progress
@@ -159,7 +170,7 @@ jobs:
         uses: pieceofcake2/ci-summary@v1
         with:
           type: junit
-          title: Unit tests — PHP ${{ matrix.php-version }} / ${{ matrix.db-type }}
+          title: Unit tests — PHP ${{ matrix.php-version }} / ${{ matrix.db-type }}${{ matrix.cakephp && format(' / CakePHP {0}', matrix.cakephp) || '' }}
           file: junit.xml
           coverage: coverage.xml
 
@@ -170,15 +181,15 @@ jobs:
           use_oidc: true
           report_type: test_results
           files: ./junit.xml
-          flags: php${{ matrix.php-version }}-${{ matrix.db-type }}
-          name: PHP ${{ matrix.php-version }} - ${{ matrix.db-type }}
+          flags: php${{ matrix.php-version }}-${{ matrix.db-type }}${{ matrix.cakephp && '-cakephp-2.12' || '' }}
+          name: PHP ${{ matrix.php-version }} - ${{ matrix.db-type }}${{ matrix.cakephp && format(' - CakePHP {0}', matrix.cakephp) || '' }}
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v7
         with:
           use_oidc: true
-          flags: php${{ matrix.php-version }}-${{ matrix.db-type }}
-          name: PHP ${{ matrix.php-version }} - ${{ matrix.db-type }}
+          flags: php${{ matrix.php-version }}-${{ matrix.db-type }}${{ matrix.cakephp && '-cakephp-2.12' || '' }}
+          name: PHP ${{ matrix.php-version }} - ${{ matrix.db-type }}${{ matrix.cakephp && format(' - CakePHP {0}', matrix.cakephp) || '' }}
 
       - name: Upload coverage reports to Qlty
         uses: qltysh/qlty-action/coverage@v2
@@ -188,7 +199,7 @@ jobs:
           files: coverage.xml
           format: clover
           incomplete: true
-          name: PHP ${{ matrix.php-version }} - ${{ matrix.db-type }}
+          name: PHP ${{ matrix.php-version }} - ${{ matrix.db-type }}${{ matrix.cakephp && format(' - CakePHP {0}', matrix.cakephp) || '' }}
 
       - name: Stop MySQL 5.6
         if: always() && matrix.db-type == 'mysql'
