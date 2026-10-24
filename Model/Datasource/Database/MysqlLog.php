@@ -16,8 +16,6 @@
  * @license       MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
-App::uses('Mysql', 'Model/Datasource/Database');
-
 /**
  * DBO implementation for the MySQL DBMS with logging enabled.
  *

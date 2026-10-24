@@ -71,11 +71,8 @@ class DATABASE_CONFIG
 }
 ```
 
-or with `App::uses()`:
-
-```php
-App::uses('ArraySource', 'Datasources.Model/Datasource');
-```
+Composer loads the classes of the plugin (`Model/` is in the classmap of its `composer.json`), so code that uses
+a datasource class directly, e.g. a subclass of `CsvSource`, does not need `App::uses()`.
 
 The database datasources under `Database/` are referenced as `Datasources.Database/<Name>`,
 but none of them is compatible yet (see [Available Datasources](#available-datasources)).

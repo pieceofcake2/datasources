@@ -18,9 +18,6 @@
  * @license       MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
 
-App::uses('Model', 'Model');
-App::uses('Adodb', 'Datasources.Model/Datasource/Database');
-
 /**
  * DboAdoTestDb
  */

@@ -16,9 +16,6 @@
  * @since         CakePHP Datasources v 0.1
  * @license       MIT License (http://www.opensource.org/licenses/mit-license.php)
  */
-App::uses('DataSource', 'Model/Datasource');
-App::uses('Xml', 'Utility');
-App::uses('HttpSocket', 'Network/Http');
 
 /**
  * XmlrpcSource
